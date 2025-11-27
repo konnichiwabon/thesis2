@@ -11,8 +11,15 @@ export default function CardBox() {
           TALAMBAN PITOS CARBON VIA ECHAVEZ
         </div>
       </div>
+      {/* Body Div */}
+      <div className="bg-amber-500 p-5 space-y-6 ">
+        <div className="flex justify-end">
+          <div className="flex bg-green-500 h-7 w-24 rounded-xl z-10 shadow-2xl items-center justify-center">
+            Moderate
+          </div>
+        </div>
+      </div>
 
-      <div className="bg-amber-500 w-1/2 ">hehuh</div>
       <div className="bg-green-500 w-1/2">hihi </div>
     </div>
   );
