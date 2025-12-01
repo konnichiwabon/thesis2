@@ -40,40 +40,28 @@ export default function CardBox() {
           <p className="text-gray-500 font-medium mt-1 text-sm">
             Status: <span className="text-green-600 font-bold">Low</span>
           </p>
+
+          <div className="h-1 w-[90%] bg-gray-200 ml-0 rounded mt-3"></div>
+
+          {/* Vehicle Plate */}
+          <div className="">Vehicle Plate </div>
+          <div className="">GWN 550 </div>
+          <div className="">(PITAMCO) </div>
+          <div className="">Vehicle Plate </div>
+          <div className="">Vehicle Plate </div>
         </div>
-        <div className="text-center space-y-2">
-          <div className="h-8 bg-gray-200 rounded mx-auto w-2/3 mb-4 text-black font-bold text-3xl">
-            Passenger Load:
-          </div>
-          <div className="flex justify-center items-end gap-4">
-            <div className="h-16 w-40 bg-gray-200 rounded text-black font-bold text-4xl">
-              15/40
-            </div>
-          </div>
-          {/* Status Indicator */}
-          <div className="text-black">Status: Low</div>
-        </div>
-        <div className="text-center">
-          <div className="h-7 bg-gray-200 rounded mx-auto w-3/4 text-black">
-            Plate: GWN 550 (PITAMCO)
-          </div>
-        </div>
-        <div className="bg-gray-200/80 rounded-xl p-4 flex justify-between items-end shadow-inner h-24">
-          <div className="w-14 h-16 bg-gray-300/50 rounded"></div>
-          <div className="w-14 h-16 bg-gray-300/50 rounded"></div>
-          <div className="w-14 h-16 bg-gray-300/50 rounded"></div>
-          <div className="w-14 h-16 bg-gray-300/50 rounded"></div>
-        </div>
+
+        <div className="text-center"></div>
+        <div className="bg-blue-200/80 rounded-xl p-4 flex justify-between items-end shadow-inner h-24"></div>
         <div className="flex gap-4 pt-2">
           <div className="flex-1 bg-blue-600 h-14 rounded-lg shadow-md items-center justify-center flex font-bold">
             Follow Vehicle
           </div>
-          <div className="flex-1 bg-blue-600 h-14 rounded-lg shadow-inner items-center justify-center flex font-bold">
+          <div className="flex-1 bg-white text-black h-14 rounded-lg shadow-inner items-center justify-center flex font-bold">
             Back
           </div>
         </div>
       </div>
-      <div className="h-3 bg-blue-700 w-full"></div>
     </div>
   );
 }
