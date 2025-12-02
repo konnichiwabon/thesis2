@@ -1,6 +1,6 @@
 export default function CardBox() {
   return (
-    <div className="w-full max-w-md m-12 bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden p-4">
+    <div className="w-full max-w-md m-12 bg-white   backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden p-4">
       <div className="bg-blue-700 p-4 flex items-center gap-3 rounded-md ">
         <div className="flex bg-red-600 h-12 w-16 rounded-md shadow-sm items-center justify-center font-bold">
           62C
@@ -33,7 +33,7 @@ export default function CardBox() {
 
           {/* Number Count */}
           <div className="mt-4 text-center">
-            <span className="text-4xl font-bold text-gray-900">15 / 40</span>
+            <span className="text-4xl font-bold text-gray-900">18/40</span>
           </div>
 
           {/* Status Text */}
@@ -41,18 +41,20 @@ export default function CardBox() {
             Status: <span className="text-green-600 font-bold">Low</span>
           </p>
 
-          <div className="h-1 w-[90%] bg-gray-200 ml-0 rounded mt-3"></div>
+          <div className="h-0.5 w-[90%] bg-gray-200 ml-0 rounded mt-3 "> </div>
+          <div className="pt-6 items-center justify-center flex flex-col gap-">
+            <div className="text-black font-bold">Vehicle Plate </div>
+            <div className="text-black">GWN 550 </div>
+            <div className="text-black ">(PITAMCO) </div>
+            <div className="text-black">Vehicle Plate </div>
+            <div className="text-black">Vehicle Plate </div>
+          </div>
 
           {/* Vehicle Plate */}
-          <div className="">Vehicle Plate </div>
-          <div className="">GWN 550 </div>
-          <div className="">(PITAMCO) </div>
-          <div className="">Vehicle Plate </div>
-          <div className="">Vehicle Plate </div>
         </div>
 
         <div className="text-center"></div>
-        <div className="bg-blue-200/80 rounded-xl p-4 flex justify-between items-end shadow-inner h-24"></div>
+
         <div className="flex gap-4 pt-2">
           <div className="flex-1 bg-blue-600 h-14 rounded-lg shadow-md items-center justify-center flex font-bold">
             Follow Vehicle
