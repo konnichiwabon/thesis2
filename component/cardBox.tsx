@@ -1,6 +1,36 @@
+"use client";
+
+import { useState } from "react";
+
 export default function CardBox() {
+  const [currentPassengers, setCurrentPassengers] = useState(0);
+
+  const status = () => {
+    if (currentPassengers <= 13)
+      return { text: "Low", color: "text-green-600" };
+    else if (currentPassengers <= 26) {
+      return { text: "Moderate", color: "text-yellow-600" };
+    } else if (currentPassengers <= 40) {
+      return { text: "High", color: "text-red-600" };
+    } else {
+      return { text: "Overloaded", color: "text-purple-600" };
+    }
+  };
+
   return (
     <div className="w-full max-w-md m-12 bg-white   backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden p-4">
+      <button
+        onClick={() => setCurrentPassengers(currentPassengers + 1)}
+        className="text-black"
+      >
+        Click me{" "}
+      </button>
+      <button
+        onClick={() => setCurrentPassengers(Math.max(0, currentPassengers - 1))}
+        className="text-black"
+      >
+        Negative{" "}
+      </button>
       <div className="bg-blue-700 p-4 flex items-center gap-3 rounded-md ">
         <div className="flex bg-red-600 h-12 w-16 rounded-md shadow-sm items-center justify-center font-bold">
           62C
@@ -33,12 +63,17 @@ export default function CardBox() {
 
           {/* Number Count */}
           <div className="mt-4 text-center">
-            <span className="text-4xl font-bold text-gray-900">18/40</span>
+            <span className="text-4xl font-bold text-gray-900">
+              {` ${currentPassengers} / 40`}
+            </span>
           </div>
 
           {/* Status Text */}
           <p className="text-gray-500 font-medium mt-1 text-sm">
-            Status: <span className="text-green-600 font-bold">Low</span>
+            Status:{" "}
+            <span className={`${status().color} font-bold`}>
+              {status().text}
+            </span>
           </p>
 
           <div className="h-0.5 w-[90%] bg-gray-200 ml-0 rounded mt-3 "> </div>
