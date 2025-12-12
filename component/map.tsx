@@ -8,6 +8,7 @@ import L from 'leaflet';
 // --- Fix for default Leaflet marker icons in React ---
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+import PopupCard from './popupcard';
 
 let DefaultIcon = L.icon({
     iconUrl: icon,
@@ -38,7 +39,15 @@ const MapComponent = ({ coords }) => {
         
         <Marker position={centerPosition}>
           <Popup>
-            Vehicle Location
+            <PopupCard 
+              route="62C"
+              plateNumber="ABC 123"
+              currentLoad={35}
+              maxLoad={40}
+              status="Moderate"
+              colorTheme="orange" 
+              onClose={() => {}}
+            />
           </Popup>
         </Marker>
       </MapContainer>
