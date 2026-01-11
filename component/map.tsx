@@ -9,6 +9,7 @@ import L from 'leaflet';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 import PopupCard from './popupcard';
+import CardBox from './cardBox';
 
 let DefaultIcon = L.icon({
     iconUrl: icon,
@@ -20,7 +21,7 @@ let DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 // -----------------------------------------------------
 
-const MapComponent = ({ coords }) => {
+const MapComponent = ({ coords, onViewMoreDetails, busData }) => {
   // Default to Cebu City if no coords are provided
   const centerPosition = coords || [10.3157, 123.8854];
 
@@ -40,13 +41,14 @@ const MapComponent = ({ coords }) => {
         <Marker position={centerPosition}>
           <Popup>
             <PopupCard 
-              route="62C"
-              plateNumber="ABC 123"
-              currentLoad={35}
-              maxLoad={40}
-              status="Moderate"
-              colorTheme="orange" 
+              route={busData.route}
+              plateNumber={busData.plateNumber}
+              currentLoad={busData.currentLoad}
+              maxLoad={busData.maxLoad}
+              status={busData.status}
+              colorTheme={busData.colorTheme}
               onClose={() => {}}
+              onViewMoreDetails={onViewMoreDetails}
             />
           </Popup>
         </Marker>
