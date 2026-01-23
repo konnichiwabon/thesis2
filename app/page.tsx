@@ -77,7 +77,7 @@ export default function Home() {
       colorTheme: getColorTheme(28)
     },
     {
-      id: 4,
+      id: 5,
       route: "13C",
       plateNumber: "DEF HUH",
       currentLoad: 28,
@@ -86,7 +86,7 @@ export default function Home() {
       colorTheme: getColorTheme(28)
     },
     {
-      id: 4,
+      id: 6,
       route: "13C",
       plateNumber: "DEF HUH",
       currentLoad: 28,
