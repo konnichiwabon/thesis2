@@ -66,7 +66,36 @@ export default function Home() {
       maxLoad: 40,
       status: getStatus(28),
       colorTheme: getColorTheme(28)
+    },
+    {
+      id: 4,
+      route: "13C",
+      plateNumber: "DEF HUH",
+      currentLoad: 28,
+      maxLoad: 40,
+      status: getStatus(28),
+      colorTheme: getColorTheme(28)
+    },
+    {
+      id: 4,
+      route: "13C",
+      plateNumber: "DEF HUH",
+      currentLoad: 28,
+      maxLoad: 40,
+      status: getStatus(28),
+      colorTheme: getColorTheme(28)
+    },
+    {
+      id: 4,
+      route: "13C",
+      plateNumber: "DEF HUH",
+      currentLoad: 28,
+      maxLoad: 40,
+      status: getStatus(28),
+      colorTheme: getColorTheme(28)
     }
+
+
   ];
 
   return (

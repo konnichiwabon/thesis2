@@ -23,9 +23,9 @@ const Carousel: React.FC<CarouselProps> = ({ items, onItemClick }) => {
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollContainerRef.current) {
-      const scrollAmount = 220; // Width of one card plus gap
+      const cardWidth = scrollContainerRef.current.scrollWidth / items.length;
       scrollContainerRef.current.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        left: direction === 'left' ? -cardWidth : cardWidth,
         behavior: 'smooth'
       });
     }
@@ -47,7 +47,7 @@ const Carousel: React.FC<CarouselProps> = ({ items, onItemClick }) => {
   };
 
   return (
-    <div className="flex items-center gap-2 w-full">
+    <div className="flex items-center gap-3 w-full px-4">
       <button
         onClick={() => scroll('left')}
         className="p-2 rounded-full bg-white/90 hover:bg-white shadow-md transition-colors flex-shrink-0"
@@ -58,31 +58,35 @@ const Carousel: React.FC<CarouselProps> = ({ items, onItemClick }) => {
 
       <div 
         ref={scrollContainerRef}
-        className="flex gap-3 overflow-x-auto scrollbar-hide scroll-smooth flex-1"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        className="flex gap-4 overflow-x-hidden scrollbar-hide scroll-smooth flex-1"
+        style={{ 
+          scrollbarWidth: 'none', 
+          msOverflowStyle: 'none'
+        }}
       >
         {items.map((item) => (
           <div
             key={item.id}
-            className="bg-white rounded-lg shadow-md p-3 min-w-[200px] border border-gray-200"
+            className="bg-white rounded-lg shadow-md p-4 h-[180px] flex-shrink-0 border border-gray-200 flex flex-col justify-center items-center"
+            style={{ width: 'calc(25% - 12px)' }}
           >
-            <div className="flex items-center gap-2 mb-2">
-              <div className={`${colorClasses[item.colorTheme].badge} text-white font-bold text-sm px-3 py-1 rounded-full`}>
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <div className={`${colorClasses[item.colorTheme].badge} text-white font-bold text-lg px-4 py-2 rounded-full`}>
                 {item.route}
               </div>
-              <span className="text-sm font-medium text-gray-700">{item.plateNumber}</span>
+              <span className="text-lg font-semibold text-gray-900">{item.plateNumber}</span>
             </div>
             
-            <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+            <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
               <div 
-                className={`h-2 rounded-full transition-all ${colorClasses[item.colorTheme].bg}`}
+                className={`h-3 rounded-full transition-all ${colorClasses[item.colorTheme].bg}`}
                 style={{ width: `${getLoadPercentage(item)}%` }}
               />
             </div>
             
-            <div className="flex justify-between items-center text-xs">
-              <span className="text-gray-600">Load: {item.currentLoad}/{item.maxLoad}</span>
-              <span className={`font-semibold ${colorClasses[item.colorTheme].text}`}>
+            <div className="flex justify-between items-center text-base w-full px-2">
+              <span className="text-gray-900 font-medium">Load: {item.currentLoad}/{item.maxLoad}</span>
+              <span className={`font-bold ${colorClasses[item.colorTheme].text}`}>
                 {item.status}
               </span>
             </div>

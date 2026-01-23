@@ -39,7 +39,7 @@ export default function CardBox({ onClose, route = "62C", plateNumber = "ABC 123
   };
 
   return (
-    <div className="relative w-full max-w-md m-12 bg-white   backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden p-4">
+    <div className="relative w-full max-w-md mt-48 mx-12 mb-12 bg-white backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden p-4">
       <button
         onClick={onClose}
         className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors"
