@@ -50,7 +50,7 @@ const Carousel: React.FC<CarouselProps> = ({ items, onItemClick }) => {
     <div className="flex items-center gap-3 w-full px-4">
       <button
         onClick={() => scroll('left')}
-        className="p-2 rounded-full bg-white/90 hover:bg-white shadow-md transition-colors flex-shrink-0"
+        className="p-2 rounded-full bg-white/90 hover:bg-white shadow-md transition-colors flex-shrink-0 hidden md:block"
         aria-label="Scroll left"
       >
         <ChevronLeft size={24} />
@@ -58,7 +58,7 @@ const Carousel: React.FC<CarouselProps> = ({ items, onItemClick }) => {
 
       <div 
         ref={scrollContainerRef}
-        className="flex gap-4 overflow-x-hidden scrollbar-hide scroll-smooth flex-1"
+        className="flex flex-nowrap gap-4 overflow-x-auto scrollbar-hide scroll-smooth flex-1 snap-x snap-mandatory"
         style={{ 
           scrollbarWidth: 'none', 
           msOverflowStyle: 'none'
@@ -67,8 +67,8 @@ const Carousel: React.FC<CarouselProps> = ({ items, onItemClick }) => {
         {items.map((item) => (
           <div
             key={item.id}
-            className="bg-white rounded-lg shadow-md p-4 h-[180px] flex-shrink-0 border border-gray-200 flex flex-col justify-center items-center"
-            style={{ width: 'calc(25% - 12px)' }}
+            onClick={() => onItemClick?.(item)}
+            className="bg-white rounded-lg shadow-md p-4 h-[180px] flex-shrink-0 border border-gray-200 flex flex-col justify-center items-center snap-center w-full md:w-[calc(50%-8px)] lg:w-[calc(25%-12px)] cursor-pointer hover:shadow-lg transition-shadow"
           >
             <div className="flex items-center justify-center gap-3 mb-4">
               <div className={`${colorClasses[item.colorTheme].badge} text-white font-bold text-lg px-4 py-2 rounded-full`}>
@@ -96,7 +96,7 @@ const Carousel: React.FC<CarouselProps> = ({ items, onItemClick }) => {
 
       <button
         onClick={() => scroll('right')}
-        className="p-2 rounded-full bg-white/90 hover:bg-white shadow-md transition-colors flex-shrink-0"
+        className="p-2 rounded-full bg-white/90 hover:bg-white shadow-md transition-colors flex-shrink-0 hidden md:block"
         aria-label="Scroll right"
       >
         <ChevronRight size={24} />
