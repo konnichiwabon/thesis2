@@ -2,7 +2,9 @@
 import CardBox from "@/component/cardBox";
 import Carousel from "@/component/carousel";
 import dynamic from 'next/dynamic';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useConvexConnectionState, useQuery, useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
 
 // Dynamically import MapComponent with SSR disabled
 const MapComponent = dynamic(() => import('@/component/map'), {
@@ -12,7 +14,27 @@ const MapComponent = dynamic(() => import('@/component/map'), {
 
 export default function Home() {
   const [showCardBox, setShowCardBox] = useState(false);
-  const [currentLoad, setCurrentLoad] = useState(35);
+  const [showCarousel, setShowCarousel] = useState(true);
+  const [selectedJeep, setSelectedJeep] = useState<any>(null);
+  const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const connectionState = useConvexConnectionState();
+  
+  // Fetch jeepneys data from Convex
+  const jeepneysData = useQuery(api.gps.getJeepneysWithLocations);
+  
+  // Mutation to save location updates
+  const saveLocation = useMutation(api.gps.saveLocation);
+  
+  // Keep selectedJeep in sync with Convex data (but not during manual updates)
+  useEffect(() => {
+    if (selectedJeep && jeepneysData && !isUpdating) {
+      const updatedJeep = jeepneysData.find(j => j.jeepneyId === selectedJeep.jeepneyId);
+      if (updatedJeep && updatedJeep.passengerCount !== selectedJeep.passengerCount) {
+        setSelectedJeep(updatedJeep);
+      }
+    }
+  }, [jeepneysData, isUpdating]);
   
   const getColorTheme = (load: number): 'green' | 'red' | 'orange' | 'purple' => {
     if (load <= 13) return "green";
@@ -29,100 +51,123 @@ export default function Home() {
   };
   
   // Bus data that will be shared between popup and CardBox
-  const busData = {
+  const busData = selectedJeep ? {
+    route: selectedJeep.jeepneyId,
+    plateNumber: selectedJeep.plateNumber,
+    currentLoad: selectedJeep.passengerCount,
+    maxLoad: 40,
+    status: getStatus(selectedJeep.passengerCount),
+    colorTheme: getColorTheme(selectedJeep.passengerCount)
+  } : {
     route: "62C",
     plateNumber: "ABC 123",
-    currentLoad: currentLoad,
+    currentLoad: 0,
     maxLoad: 40,
-    status: getStatus(currentLoad),
-    colorTheme: getColorTheme(currentLoad)
+    status: "Low",
+    colorTheme: "green" as const
   };
 
-  // Sample carousel items - you can replace this with actual data
-  const carouselItems = [
-    {
-      id: 1,
-      route: "62C",
-      plateNumber: "ABC 123",
-      currentLoad: 35,
-      maxLoad: 40,
-      status: getStatus(35),
-      colorTheme: getColorTheme(35)
-    },
-    {
-      id: 2,
-      route: "04L",
-      plateNumber: "XYZ 456",
-      currentLoad: 10,
-      maxLoad: 40,
-      status: getStatus(10),
-      colorTheme: getColorTheme(10)
-    },
-    {
-      id: 3,
-      route: "13C",
-      plateNumber: "DEF 789",
-      currentLoad: 28,
-      maxLoad: 40,
-      status: getStatus(28),
-      colorTheme: getColorTheme(28)
-    },
-    {
-      id: 4,
-      route: "13C",
-      plateNumber: "DEF HUH",
-      currentLoad: 28,
-      maxLoad: 40,
-      status: getStatus(28),
-      colorTheme: getColorTheme(28)
-    },
-    {
-      id: 5,
-      route: "13C",
-      plateNumber: "DEF HUH",
-      currentLoad: 28,
-      maxLoad: 40,
-      status: getStatus(28),
-      colorTheme: getColorTheme(28)
-    },
-    {
-      id: 6,
-      route: "13C",
-      plateNumber: "DEF HUH",
-      currentLoad: 28,
-      maxLoad: 40,
-      status: getStatus(28),
-      colorTheme: getColorTheme(28)
-    }
+  // Convert Convex data to carousel items
+  const carouselItems = jeepneysData?.map((jeep, index) => ({
+    id: index + 1,
+    route: jeep.jeepneyId,
+    plateNumber: jeep.plateNumber,
+    currentLoad: jeep.passengerCount,
+    maxLoad: 40,
+    status: getStatus(jeep.passengerCount),
+    colorTheme: getColorTheme(jeep.passengerCount)
+  })) || [];
 
-
-  ];
+  // Get jeepney locations for map markers
+  const jeepLocations = jeepneysData?.map(jeep => ({
+    id: jeep.jeepneyId,
+    plateNumber: jeep.plateNumber,
+    passengerCount: jeep.passengerCount,
+    position: [jeep.location!.lat, jeep.location!.lng] as [number, number],
+    colorTheme: getColorTheme(jeep.passengerCount),
+    status: getStatus(jeep.passengerCount)
+  })) || [];
 
   return (
     <div>
       <MapComponent 
-        coords={[10.335682729765237, 123.9112697095374]} 
-        onViewMoreDetails={() => setShowCardBox(true)}
-        busData={busData}
+        jeepLocations={jeepLocations}
+        selectedLocation={mapCenter}
+        onViewMoreDetails={(jeep) => {
+          setSelectedJeep(jeep);
+          setShowCardBox(true);
+          setShowCarousel(false);
+        }}
       />
       
-      {/* Carousel positioned on top of the map */}
-      <div className="absolute top-4 left-4 right-4 z-20">
-        <Carousel 
-          items={carouselItems}
-        />
+      {/* Connection Status Indicator */}
+      <div className="absolute bottom-5 left-5 z-50 bg-white/90 px-4 py-2 rounded-full shadow-lg text-sm font-bold backdrop-blur-sm border border-gray-200">
+        Status:{" "}
+        <span className={connectionState?.isWebSocketConnected ? "text-green-600" : "text-red-600"}>
+          {connectionState?.isWebSocketConnected ? "Connected to Convex" : "Disconnected"}
+        </span>
       </div>
+
+      {/* Carousel positioned on top of the map */}
+      {showCarousel && (
+        <div className="absolute top-4 left-4 right-4 z-20">
+          <Carousel 
+            items={carouselItems}
+            onItemClick={(item) => {
+              const jeep = jeepneysData?.find(j => j.jeepneyId === item.route);
+              if (jeep && jeep.location) {
+                setSelectedJeep(jeep);
+                setMapCenter([jeep.location.lat, jeep.location.lng]);
+                setShowCardBox(true);
+                setShowCarousel(false);
+              }
+            }}
+          />
+        </div>
+      )}
       
-      {showCardBox && (
-        <div className="absolute top-0 left-0 p-4 z-10">
-          <div className="relative">
+      {showCardBox && selectedJeep && (
+        <div className="absolute top-0 left-0 p-4 z-30 h-full pointer-events-none">
+          <div className="relative pointer-events-auto">
             <CardBox 
-              onClose={() => setShowCardBox(false)} 
+              onClose={() => {
+                setShowCardBox(false);
+                setSelectedJeep(null);
+                setShowCarousel(true);
+                setMapCenter(null);
+              }} 
               route={busData.route}
               plateNumber={busData.plateNumber}
               currentLoad={busData.currentLoad}
               maxLoad={busData.maxLoad}
-              onLoadChange={setCurrentLoad}
+              onLoadChange={async (newLoad) => {
+                // Optimistically update UI immediately
+                setSelectedJeep({...selectedJeep, passengerCount: newLoad});
+                setIsUpdating(true);
+                
+                // Calculate passengers in/out
+                const diff = newLoad - busData.currentLoad;
+                const passengersIn = diff > 0 ? diff : 0;
+                const passengersOut = diff < 0 ? Math.abs(diff) : 0;
+                
+                // Update Convex database
+                if (selectedJeep && selectedJeep.location) {
+                  try {
+                    await saveLocation({
+                      jeepneyId: selectedJeep.jeepneyId,
+                      plateNumber: selectedJeep.plateNumber,
+                      latitude: selectedJeep.location.lat,
+                      longitude: selectedJeep.location.lng,
+                      passengersIn: passengersIn,
+                      passengersOut: passengersOut,
+                    });
+                  } catch (error) {
+                    console.error("Failed to update passenger count:", error);
+                  } finally {
+                    setIsUpdating(false);
+                  }
+                }
+              }}
             />
           </div>
         </div>

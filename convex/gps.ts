@@ -74,3 +74,32 @@ export const getJeepneys = query({
     return await ctx.db.query("jeepneys").collect();
   },
 });
+
+// Get jeepneys with their latest location
+export const getJeepneysWithLocations = query({
+  args: {},
+  handler: async (ctx) => {
+    const jeepneys = await ctx.db.query("jeepneys").collect();
+    
+    const jeepneysWithLocations = await Promise.all(
+      jeepneys.map(async (jeep) => {
+        // Get the most recent location for this jeep
+        const latestLocation = await ctx.db
+          .query("locations")
+          .filter((q) => q.eq(q.field("jeepneyId"), jeep.jeepneyId))
+          .order("desc")
+          .first();
+        
+        return {
+          ...jeep,
+          location: latestLocation ? {
+            lat: latestLocation.lat,
+            lng: latestLocation.lng,
+          } : null,
+        };
+      })
+    );
+    
+    return jeepneysWithLocations.filter((jeep) => jeep.location !== null);
+  },
+});
