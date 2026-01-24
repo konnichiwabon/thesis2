@@ -71,10 +71,10 @@ const Carousel: React.FC<CarouselProps> = ({ items, onItemClick }) => {
             className="bg-white rounded-lg shadow-md p-4 h-[180px] flex-shrink-0 border border-gray-200 flex flex-col justify-center items-center snap-center w-full md:w-[calc(50%-8px)] lg:w-[calc(25%-12px)] cursor-pointer hover:shadow-lg transition-shadow"
           >
             <div className="flex items-center justify-center gap-3 mb-4">
-              <div className={`${colorClasses[item.colorTheme].badge} text-white font-bold text-lg px-4 py-2 rounded-full`}>
+              <div className={`${colorClasses[item.colorTheme].badge} text-white font-bold text-2xl px-4 py-2 rounded-full`}>
                 {item.route}
               </div>
-              <span className="text-lg font-semibold text-gray-900">{item.plateNumber}</span>
+              <span className="text-2xl font-semibold text-gray-900">{item.plateNumber}</span>
             </div>
             
             <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
@@ -84,8 +84,8 @@ const Carousel: React.FC<CarouselProps> = ({ items, onItemClick }) => {
               />
             </div>
             
-            <div className="flex justify-between items-center text-base w-full px-2">
-              <span className="text-gray-900 font-medium">Load: {item.currentLoad}/{item.maxLoad}</span>
+            <div className="flex justify-between items-center text-lg w-full px-2">
+              <span className="text-gray-900 font-bold">Load: {item.currentLoad}/{item.maxLoad}</span>
               <span className={`font-bold ${colorClasses[item.colorTheme].text}`}>
                 {item.status}
               </span>
