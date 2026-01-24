@@ -1,22 +1,11 @@
 "use client"
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import PopupCard from './popupcard';
 import CardBox from './cardBox';
-
-// --- Fix for default Leaflet marker icons in React ---
-let DefaultIcon = L.icon({
-    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41]
-});
-
-L.Marker.prototype.options.icon = DefaultIcon;
-// -----------------------------------------------------
 
 interface MapComponentProps {
   coords?: [number, number];
@@ -32,6 +21,16 @@ interface MapComponentProps {
 }
 
 const MapComponent: React.FC<MapComponentProps> = ({ coords, onViewMoreDetails, busData }) => {
+  // Fix for default Leaflet marker icons in React - only on client side
+  useEffect(() => {
+    const DefaultIcon = L.icon({
+      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41]
+    });
+    L.Marker.prototype.options.icon = DefaultIcon;
+  }, []);
   // Default to Cebu City if no coords are provided
   const centerPosition = coords || [10.3157, 123.8854];
 
