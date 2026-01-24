@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -21,24 +21,19 @@ interface MapComponentProps {
   onViewMoreDetails: (jeep: any) => void;
 }
 
-// Component to handle map panning
 function MapController({ selectedLocation }: { selectedLocation?: [number, number] | null }) {
   const map = useMap();
-  
   useEffect(() => {
     if (selectedLocation) {
-      map.flyTo(selectedLocation, 17, {
-        duration: 1.5
-      });
+      map.flyTo(selectedLocation, 17, { duration: 1.5 });
     }
   }, [selectedLocation, map]);
-  
   return null;
 }
 
 const MapComponent: React.FC<MapComponentProps> = ({ jeepLocations, selectedLocation, onViewMoreDetails }) => {
-  // Fix for default Leaflet marker icons in React - only on client side
   useEffect(() => {
+    // Fix for default markers
     const DefaultIcon = L.icon({
       iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
       shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
@@ -48,7 +43,6 @@ const MapComponent: React.FC<MapComponentProps> = ({ jeepLocations, selectedLoca
     L.Marker.prototype.options.icon = DefaultIcon;
   }, []);
   
-  // Default center to Cebu City
   const centerPosition: [number, number] = jeepLocations.length > 0 
     ? jeepLocations[0].position 
     : [10.3157, 123.8854];
@@ -62,14 +56,17 @@ const MapComponent: React.FC<MapComponentProps> = ({ jeepLocations, selectedLoca
         style={{ height: '100%', width: '100%' }}
       >
         <MapController selectedLocation={selectedLocation} />
+        
+        {/* --- GOOGLE MAPS LAYER (FIXED HTTPS) --- */}
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; Google Maps'
+          url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
         />
+        {/* --------------------------------------- */}
         
         {jeepLocations.map((jeep) => (
           <Marker key={jeep.id} position={jeep.position}>
-            <Popup>
+            <Popup autoPan={true} keepInView={true}>
               <PopupCard 
                 route={jeep.id}
                 plateNumber={jeep.plateNumber}

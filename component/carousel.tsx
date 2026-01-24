@@ -71,7 +71,7 @@ const Carousel: React.FC<CarouselProps> = ({ items, onItemClick }) => {
             className="bg-white rounded-lg shadow-md p-4 h-[180px] flex-shrink-0 border border-gray-200 flex flex-col justify-center items-center snap-center w-full md:w-[calc(50%-8px)] lg:w-[calc(25%-12px)] cursor-pointer hover:shadow-lg transition-shadow"
           >
             <div className="flex items-center justify-center gap-3 mb-4">
-              <div className={`${colorClasses[item.colorTheme].badge} text-white font-bold text-2xl px-4 py-2 rounded-full`}>
+              <div className={`${colorClasses[item.colorTheme].badge} text-white font-bold text-2xl px-4 py-2 rounded-lg`}>
                 {item.route}
               </div>
               <span className="text-2xl font-semibold text-gray-900">{item.plateNumber}</span>
