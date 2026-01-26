@@ -13,9 +13,9 @@
     "install": "^0.13.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.562.0",
-    "next": "16.0.4",
-    "react": "19.2.0",
-    "react-dom": "19.2.0",
+    "next": "^16.1.4",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
     "react-leaflet": "^5.0.0"
   },
   "devDependencies": {
