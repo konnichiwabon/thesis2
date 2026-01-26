@@ -1,7 +1,7 @@
 "use client"
 
-import React, { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import React, { useEffect, useState } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, useMap, CircleMarker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import PopupCard from './popupcard';
@@ -15,8 +15,17 @@ interface JeepLocation {
   status: string;
 }
 
+interface BusStop {
+  _id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  color: string;
+}
+
 interface MapComponentProps {
   jeepLocations: JeepLocation[];
+  busStops?: BusStop[];
   selectedLocation?: [number, number] | null;
   onViewMoreDetails: (jeep: any) => void;
 }
@@ -31,7 +40,50 @@ function MapController({ selectedLocation }: { selectedLocation?: [number, numbe
   return null;
 }
 
-const MapComponent: React.FC<MapComponentProps> = ({ jeepLocations, selectedLocation, onViewMoreDetails }) => {
+function BusStopsLayer({ busStops }: { busStops: BusStop[] }) {
+  const [zoom, setZoom] = useState(15);
+  
+  useMapEvents({
+    zoomend: (e) => {
+      setZoom(e.target.getZoom());
+    },
+  });
+
+  // Only show bus stops when zoomed in to level 14 or higher
+  if (zoom < 14) {
+    return null;
+  }
+
+  return (
+    <>
+      {busStops.map((stop) => (
+        <CircleMarker
+          key={stop._id}
+          center={[stop.lat, stop.lng]}
+          radius={8}
+          pathOptions={{
+            fillColor: stop.color,
+            fillOpacity: 0.6,
+            color: stop.color,
+            weight: 1.5
+          }}
+        >
+          <Popup>
+            <div className="p-2">
+              <h3 className="font-bold text-lg">{stop.name}</h3>
+              <p className="text-sm text-gray-600">Bus Stop</p>
+              <p className="text-xs text-gray-500">
+                {stop.lat.toFixed(4)}, {stop.lng.toFixed(4)}
+              </p>
+            </div>
+          </Popup>
+        </CircleMarker>
+      ))}
+    </>
+  );
+}
+
+const MapComponent: React.FC<MapComponentProps> = ({ jeepLocations, busStops = [], selectedLocation, onViewMoreDetails }) => {
   useEffect(() => {
     // Fix for default markers
     const DefaultIcon = L.icon({
@@ -64,6 +116,10 @@ const MapComponent: React.FC<MapComponentProps> = ({ jeepLocations, selectedLoca
         />
         {/* --------------------------------------- */}
         
+        {/* Bus Stops as Circles - only visible when zoomed in */}
+        <BusStopsLayer busStops={busStops} />
+        
+        {/* Jeepney Markers */}
         {jeepLocations.map((jeep) => (
           <Marker key={jeep.id} position={jeep.position}>
             <Popup autoPan={true} keepInView={true}>

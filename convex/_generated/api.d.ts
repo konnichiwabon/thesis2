@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as busStops from "../busStops.js";
 import type * as gps from "../gps.js";
 
 import type {
@@ -17,6 +18,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  busStops: typeof busStops;
   gps: typeof gps;
 }>;
 

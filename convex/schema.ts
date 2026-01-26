@@ -19,4 +19,11 @@ export default defineSchema({
     totalPassengers: v.number(),
     timestamp: v.number(),
   }).index("by_jeepneyId", ["jeepneyId"]),
+
+  busStops: defineTable({
+    name: v.string(),
+    lat: v.number(),
+    lng: v.number(),
+    color: v.string(), // e.g., "#FF5733"
+  }),
 });
