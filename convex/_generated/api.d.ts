@@ -10,6 +10,7 @@
 
 import type * as busStops from "../busStops.js";
 import type * as gps from "../gps.js";
+import type * as routes from "../routes.js";
 
 import type {
   ApiFromModules,
@@ -20,6 +21,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   busStops: typeof busStops;
   gps: typeof gps;
+  routes: typeof routes;
 }>;
 
 /**

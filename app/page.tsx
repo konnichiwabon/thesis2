@@ -18,6 +18,10 @@ export default function Home() {
   const [selectedJeep, setSelectedJeep] = useState<any>(null);
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [mapType, setMapType] = useState<'roadmap' | 'satellite' | 'hybrid' | 'terrain'>('roadmap');
+  const [selectedBusStop, setSelectedBusStop] = useState<any>(null);
+  const [routesPassingThrough, setRoutesPassingThrough] = useState<any[]>([]);
+  const [nearbyJeepneys, setNearbyJeepneys] = useState<any[]>([]);
   const connectionState = useConvexConnectionState();
   
   // Fetch jeepneys data from Convex
@@ -25,6 +29,9 @@ export default function Home() {
   
   // Fetch bus stops data from Convex
   const busStopsData = useQuery(api.busStops.getAllBusStops);
+  
+  // Fetch all routes from Convex
+  const allRoutes = useQuery(api.routes.getAllRoutes);
   
   // Mutation to save location updates
   const saveLocation = useMutation(api.gps.saveLocation);
@@ -91,6 +98,46 @@ export default function Home() {
     status: getStatus(jeep.passengerCount)
   })) || [];
 
+  // Find routes passing through a bus stop (within 50 meters)
+  const findRoutesPassingThroughBusStop = (busStopLat: number, busStopLng: number) => {
+    if (!allRoutes) return [];
+    
+    const threshold = 0.0005; // Approximately 50 meters in degrees
+    
+    return allRoutes.filter(route => {
+      return route.geometry.some(point => {
+        const distance = Math.sqrt(
+          Math.pow(point.lat - busStopLat, 2) + Math.pow(point.lng - busStopLng, 2)
+        );
+        return distance <= threshold;
+      });
+    });
+  };
+
+  const handleBusStopClick = (busStop: any) => {
+    setSelectedBusStop(busStop);
+    const passingRoutes = findRoutesPassingThroughBusStop(busStop.lat, busStop.lng);
+    setRoutesPassingThrough(passingRoutes);
+    
+    // Find jeepneys near this bus stop (within 500 meters)
+    if (jeepneysData) {
+      const threshold = 0.005; // Approximately 500 meters
+      const nearby = jeepneysData.filter(jeep => {
+        if (!jeep.location) return false;
+        const distance = Math.sqrt(
+          Math.pow(jeep.location.lat - busStop.lat, 2) + 
+          Math.pow(jeep.location.lng - busStop.lng, 2)
+        );
+        return distance <= threshold;
+      });
+      setNearbyJeepneys(nearby);
+    }
+    
+    setShowCarousel(false);
+    setShowCardBox(false);
+    setMapCenter([busStop.lat, busStop.lng]);
+  };
+
   return (
     <div>
       <MapComponent 
@@ -101,6 +148,27 @@ export default function Home() {
           setSelectedJeep(jeep);
           setShowCardBox(true);
           setShowCarousel(false);
+        }}
+        onBusStopClick={handleBusStopClick}
+        mapType={mapType}
+        routesPassingThrough={routesPassingThrough}
+        nearbyJeepneys={nearbyJeepneys}
+        selectedBusStop={selectedBusStop}
+        onJeepneyClickFromBusStop={(jeep) => {
+          setSelectedJeep(jeep);
+          setShowCardBox(true);
+          setSelectedBusStop(null);
+          setRoutesPassingThrough([]);
+          setNearbyJeepneys([]);
+          if (jeep.location) {
+            setMapCenter([jeep.location.lat, jeep.location.lng]);
+          }
+        }}
+        onCloseBusStop={() => {
+          setSelectedBusStop(null);
+          setRoutesPassingThrough([]);
+          setNearbyJeepneys([]);
+          setShowCarousel(true);
         }}
       />
       
@@ -115,6 +183,56 @@ export default function Home() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
       </a>
+
+      {/* Map Type Switcher */}
+      <div className="absolute top-5 right-20 z-50 bg-white/90 rounded-lg shadow-lg backdrop-blur-sm border border-gray-200 overflow-hidden">
+        <div className="flex">
+          <button
+            onClick={() => setMapType('roadmap')}
+            className={`px-3 py-2 text-xs font-medium transition-colors ${
+              mapType === 'roadmap'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-700 hover:bg-gray-100'
+            }`}
+            title="Roadmap"
+          >
+            🗺️
+          </button>
+          <button
+            onClick={() => setMapType('satellite')}
+            className={`px-3 py-2 text-xs font-medium transition-colors ${
+              mapType === 'satellite'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-700 hover:bg-gray-100'
+            }`}
+            title="Satellite"
+          >
+            🛰️
+          </button>
+          <button
+            onClick={() => setMapType('hybrid')}
+            className={`px-3 py-2 text-xs font-medium transition-colors ${
+              mapType === 'hybrid'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-700 hover:bg-gray-100'
+            }`}
+            title="Hybrid"
+          >
+            🌍
+          </button>
+          <button
+            onClick={() => setMapType('terrain')}
+            className={`px-3 py-2 text-xs font-medium transition-colors ${
+              mapType === 'terrain'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-700 hover:bg-gray-100'
+            }`}
+            title="Terrain"
+          >
+            ⛰️
+          </button>
+        </div>
+      </div>
       
       {/* Connection Status Indicator */}
       <div className="absolute bottom-5 left-5 z-50 bg-white/90 px-4 py-2 rounded-full shadow-lg text-sm font-bold backdrop-blur-sm border border-gray-200">

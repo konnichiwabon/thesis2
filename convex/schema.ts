@@ -26,4 +26,25 @@ export default defineSchema({
     lng: v.number(),
     color: v.string(), // e.g., "#FF5733"
   }),
+
+  routes: defineTable({
+    name: v.string(),              // Route name (e.g., "Pasay - Alabang")
+    color: v.string(),             // Display color for the route
+    waypoints: v.array(            // Original clicked waypoints
+      v.object({
+        lat: v.number(),
+        lng: v.number(),
+      })
+    ),
+    geometry: v.array(             // OSRM-generated road-following coordinates
+      v.object({
+        lat: v.number(),
+        lng: v.number(),
+      })
+    ),
+    distance: v.number(),          // Total distance in meters
+    duration: v.number(),          // Estimated duration in seconds
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_name", ["name"]),
 });
