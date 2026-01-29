@@ -1,11 +1,12 @@
 "use client"
 
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap, CircleMarker, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, useMap, CircleMarker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import PopupCard from './popupcard';
 import BusStopPopup from './busStopPopup';
+import JeepneyMarker from './jeepneyMarker';
+import JeepneyMarkerPopup from './jeepneyMarkerPopup';
 
 interface JeepLocation {
   id: string;
@@ -90,35 +91,7 @@ function BusStopsLayer({ busStops, onBusStopClick, selectedBusStop, routesPassin
               }
             }
           }}
-        >
-          <Popup autoPan={true} keepInView={true} maxWidth={350}>
-            {selectedBusStop && selectedBusStop._id === stop._id ? (
-              <BusStopPopup
-                busStop={stop}
-                routes={routesPassingThrough || []}
-                jeepneys={nearbyJeepneys || []}
-                onClose={() => {
-                  if (onCloseBusStop) {
-                    onCloseBusStop();
-                  }
-                }}
-                onJeepneyClick={(jeep) => {
-                  if (onJeepneyClickFromBusStop) {
-                    onJeepneyClickFromBusStop(jeep);
-                  }
-                }}
-              />
-            ) : (
-              <div onClick={(e) => e.stopPropagation()}>
-                <div className="font-bold text-lg mb-1">{stop.name}</div>
-                <div className="text-xs text-gray-500 mb-2">Bus Stop</div>
-                <div className="text-xs text-gray-500">
-                  {stop.lat.toFixed(4)}, {stop.lng.toFixed(4)}
-                </div>
-              </div>
-            )}
-          </Popup>
-        </CircleMarker>
+        />
       ))}
     </>
   );
@@ -148,6 +121,25 @@ const MapComponent: React.FC<MapComponentProps> = ({
       iconAnchor: [12, 41]
     });
     L.Marker.prototype.options.icon = DefaultIcon;
+    
+    // Add pulse animation to head
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes pulse {
+        0%, 100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.5;
+          transform: scale(1.2);
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(style);
+    };
   }, []);
   
   const centerPosition: [number, number] = jeepLocations.length > 0 
@@ -200,22 +192,15 @@ const MapComponent: React.FC<MapComponentProps> = ({
           onCloseBusStop={onCloseBusStop}
         />
         
-        {/* Jeepney Markers */}
+        {/* Jeepney Markers with Route Numbers */}
         {jeepLocations.map((jeep) => (
-          <Marker key={jeep.id} position={jeep.position}>
-            <Popup autoPan={true} keepInView={true}>
-              <PopupCard 
-                route={jeep.id}
-                plateNumber={jeep.plateNumber}
-                currentLoad={jeep.passengerCount}
-                maxLoad={40}
-                status={jeep.status}
-                colorTheme={jeep.colorTheme}
-                onClose={() => {}}
-                onViewMoreDetails={() => onViewMoreDetails(jeep)}
-              />
-            </Popup>
-          </Marker>
+          <JeepneyMarker
+            key={jeep.id}
+            jeep={jeep}
+            nearbyJeepneys={nearbyJeepneys}
+            onClick={onViewMoreDetails}
+            showRouteNumber={true}
+          />
         ))}
       </MapContainer>
     </div>

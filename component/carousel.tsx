@@ -40,10 +40,10 @@ const Carousel: React.FC<CarouselProps> = ({ items, onItemClick }) => {
   };
 
   const colorClasses = {
-    green: { bg: 'bg-green-500', text: 'text-green-600', badge: 'bg-green-500' },
-    orange: { bg: 'bg-orange-500', text: 'text-orange-600', badge: 'bg-orange-500' },
-    red: { bg: 'bg-red-500', text: 'text-red-600', badge: 'bg-red-500' },
-    purple: { bg: 'bg-purple-500', text: 'text-purple-600', badge: 'bg-purple-500' }
+    green: { bg: 'bg-green-600', text: 'text-green-600', badge: 'bg-green-600' },
+    orange: { bg: 'bg-orange-600', text: 'text-orange-600', badge: 'bg-orange-600' },
+    red: { bg: 'bg-red-600', text: 'text-red-600', badge: 'bg-red-600' },
+    purple: { bg: 'bg-purple-600', text: 'text-purple-600', badge: 'bg-purple-600x' }
   };
 
   return (

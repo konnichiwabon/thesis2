@@ -26,10 +26,10 @@ export default function PopupCard({
   
   // Helper for colors based on theme
   const theme = {
-    green: { bg: 'bg-green-600', text: 'text-green-600', bar: 'bg-green-500' },
-    red: { bg: 'bg-red-600', text: 'text-red-600', bar: 'bg-red-500' },
-    orange: { bg: 'bg-yellow-600', text: 'text-yellow-600', bar: 'bg-yellow-500' },
-    purple: { bg: 'bg-purple-600', text: 'text-purple-600', bar: 'bg-purple-500' },
+    green: { bg: 'bg-green-600', text: 'text-green-600', bar: 'bg-green-600' },
+    red: { bg: 'bg-red-600', text: 'text-red-600', bar: 'bg-red-600' },
+    orange: { bg: 'bg-yellow-600', text: 'text-yellow-600', bar: 'bg-yellow-600' },
+    purple: { bg: 'bg-purple-600', text: 'text-purple-600', bar: 'bg-purple-600' },
   }[colorTheme];
 
   const handleViewMore = () => {

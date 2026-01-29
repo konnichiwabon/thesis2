@@ -5,6 +5,8 @@ import dynamic from 'next/dynamic';
 import { useState, useEffect } from 'react';
 import { useConvexConnectionState, useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { getLoadStatus } from "@/types/jeepney";
+import type { JeepneyMapMarker, JeepneyCarouselItem } from "@/types/jeepney";
 
 // Dynamically import MapComponent with SSR disabled
 const MapComponent = dynamic(() => import('@/component/map'), {
@@ -22,6 +24,7 @@ export default function Home() {
   const [selectedBusStop, setSelectedBusStop] = useState<any>(null);
   const [routesPassingThrough, setRoutesPassingThrough] = useState<any[]>([]);
   const [nearbyJeepneys, setNearbyJeepneys] = useState<any[]>([]);
+  const [busStopCoords, setBusStopCoords] = useState<{lat: number, lng: number} | null>(null);
   const connectionState = useConvexConnectionState();
   
   // Fetch jeepneys data from Convex
@@ -33,8 +36,29 @@ export default function Home() {
   // Fetch all routes from Convex
   const allRoutes = useQuery(api.routes.getAllRoutes);
   
+  // Fetch nearby jeepneys for selected bus stop (with 1km radius)
+  const nearbyJeepneysData = useQuery(
+    api.busStops.getNearbyJeepneysAtBusStop,
+    busStopCoords ? {
+      busStopLat: busStopCoords.lat,
+      busStopLng: busStopCoords.lng,
+      radiusMeters: 1000, // 1km radius
+    } : "skip"
+  );
+  
   // Mutation to save location updates
   const saveLocation = useMutation(api.gps.saveLocation);
+  
+  // Update nearby jeepneys when query results change
+  useEffect(() => {
+    if (nearbyJeepneysData) {
+      console.log("🚍 Nearby jeepneys found:", nearbyJeepneysData.length);
+      nearbyJeepneysData.forEach(jeep => {
+        console.log(`  - ${jeep.plateNumber} (${jeep.jeepneyId}) - ${jeep.distanceFromBusStop}m away`);
+      });
+      setNearbyJeepneys(nearbyJeepneysData);
+    }
+  }, [nearbyJeepneysData]);
   
   // Keep selectedJeep in sync with Convex data (but not during manual updates)
   useEffect(() => {
@@ -89,13 +113,15 @@ export default function Home() {
   })) || [];
 
   // Get jeepney locations for map markers
-  const jeepLocations = jeepneysData?.map(jeep => ({
+  const jeepLocations = jeepneysData?.filter(jeep => jeep.location !== null).map(jeep => ({
     id: jeep.jeepneyId,
     plateNumber: jeep.plateNumber,
     passengerCount: jeep.passengerCount,
     position: [jeep.location!.lat, jeep.location!.lng] as [number, number],
     colorTheme: getColorTheme(jeep.passengerCount),
-    status: getStatus(jeep.passengerCount)
+    status: getStatus(jeep.passengerCount),
+    routeNumber: jeep.routeNumber,
+    color: jeep.color,
   })) || [];
 
   // Find routes passing through a bus stop (within 50 meters)
@@ -115,23 +141,16 @@ export default function Home() {
   };
 
   const handleBusStopClick = (busStop: any) => {
+    console.log("🚏 Bus Stop Clicked:", busStop.name);
     setSelectedBusStop(busStop);
-    const passingRoutes = findRoutesPassingThroughBusStop(busStop.lat, busStop.lng);
-    setRoutesPassingThrough(passingRoutes);
     
-    // Find jeepneys near this bus stop (within 500 meters)
-    if (jeepneysData) {
-      const threshold = 0.005; // Approximately 500 meters
-      const nearby = jeepneysData.filter(jeep => {
-        if (!jeep.location) return false;
-        const distance = Math.sqrt(
-          Math.pow(jeep.location.lat - busStop.lat, 2) + 
-          Math.pow(jeep.location.lng - busStop.lng, 2)
-        );
-        return distance <= threshold;
-      });
-      setNearbyJeepneys(nearby);
-    }
+    // Set coordinates to trigger the query for nearby jeepneys
+    setBusStopCoords({ lat: busStop.lat, lng: busStop.lng });
+    
+    // Find routes passing through this bus stop
+    const passingRoutes = findRoutesPassingThroughBusStop(busStop.lat, busStop.lng);
+    console.log("📍 Routes passing through:", passingRoutes.length, passingRoutes.map(r => r.name));
+    setRoutesPassingThrough(passingRoutes);
     
     setShowCarousel(false);
     setShowCardBox(false);
@@ -168,6 +187,7 @@ export default function Home() {
           setSelectedBusStop(null);
           setRoutesPassingThrough([]);
           setNearbyJeepneys([]);
+          setBusStopCoords(null); // Clear coordinates to stop the query
           setShowCarousel(true);
         }}
       />
@@ -257,6 +277,49 @@ export default function Home() {
               }
             }}
           />
+        </div>
+      )}
+
+      {/* Bus Stop Info Banner - Shows when a bus stop is selected */}
+      {selectedBusStop && nearbyJeepneys && nearbyJeepneys.length > 0 && (
+        <div className="absolute top-4 left-4 right-4 z-20 bg-blue-600 text-white rounded-lg shadow-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <h3 className="font-bold text-lg">📍 {selectedBusStop.name}</h3>
+              <p className="text-sm opacity-90 mt-1">
+                Found <span className="font-bold">{nearbyJeepneys.length}</span> jeepney(s) within 1km that passed through this stop
+              </p>
+              <div className="flex gap-2 mt-2 flex-wrap">
+                {nearbyJeepneys.map((jeep: any) => (
+                  <button
+                    key={jeep.jeepneyId}
+                    onClick={() => {
+                      setSelectedJeep(jeep);
+                      setShowCardBox(true);
+                      if (jeep.location) {
+                        setMapCenter([jeep.location.lat, jeep.location.lng]);
+                      }
+                    }}
+                    className="bg-white text-blue-600 px-3 py-1 rounded-full text-xs font-bold hover:bg-blue-50 transition-colors"
+                  >
+                    🚍 {jeep.plateNumber} ({jeep.distanceFromBusStop}m away)
+                  </button>
+                ))}
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setSelectedBusStop(null);
+                setRoutesPassingThrough([]);
+                setNearbyJeepneys([]);
+                setBusStopCoords(null);
+                setShowCarousel(true);
+              }}
+              className="text-white hover:text-blue-200 text-2xl font-bold ml-4"
+            >
+              ×
+            </button>
+          </div>
         </div>
       )}
       

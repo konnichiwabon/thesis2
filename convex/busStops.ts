@@ -34,3 +34,97 @@ export const deleteBusStop = mutation({
     await ctx.db.delete(args.id);
   },
 });
+
+// Calculate distance between two coordinates in meters using Haversine formula
+function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371e3; // Earth's radius in meters
+  const φ1 = (lat1 * Math.PI) / 180;
+  const φ2 = (lat2 * Math.PI) / 180;
+  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+  const Δλ = ((lng2 - lng1) * Math.PI) / 180;
+
+  const a =
+    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c; // Distance in meters
+}
+
+// Query to find jeepneys within 1km of a bus stop that have passed through that area
+export const getNearbyJeepneysAtBusStop = query({
+  args: {
+    busStopLat: v.number(),
+    busStopLng: v.number(),
+    radiusMeters: v.optional(v.number()), // Default to 1000m (1km)
+  },
+  handler: async (ctx, args) => {
+    const radius = args.radiusMeters || 1000; // 1km default
+    
+    // Get all jeepneys
+    const allJeepneys = await ctx.db.query("jeepneys").collect();
+    
+    // For each jeepney, check:
+    // 1. If their current location is within radius
+    // 2. If they've ever passed through this bus stop area (check location history)
+    const nearbyJeepneys = await Promise.all(
+      allJeepneys.map(async (jeep) => {
+        // Get current location
+        const latestLocation = await ctx.db
+          .query("locations")
+          .filter((q) => q.eq(q.field("jeepneyId"), jeep.jeepneyId))
+          .order("desc")
+          .first();
+        
+        if (!latestLocation) return null;
+        
+        // Check if current location is within radius
+        const currentDistance = calculateDistance(
+          args.busStopLat,
+          args.busStopLng,
+          latestLocation.lat,
+          latestLocation.lng
+        );
+        
+        const isCurrentlyNearby = currentDistance <= radius;
+        
+        // Check location history to see if this jeepney has passed through this area
+        const locationHistory = await ctx.db
+          .query("locations")
+          .filter((q) => q.eq(q.field("jeepneyId"), jeep.jeepneyId))
+          .collect();
+        
+        // Check if any historical location was within the bus stop area (within 50m for "passing through")
+        const hasPassedThrough = locationHistory.some(loc => {
+          const distance = calculateDistance(
+            args.busStopLat,
+            args.busStopLng,
+            loc.lat,
+            loc.lng
+          );
+          return distance <= 50; // 50 meters threshold for "passing through"
+        });
+        
+        // Only return jeepneys that are both nearby AND have passed through
+        if (isCurrentlyNearby && hasPassedThrough) {
+          return {
+            ...jeep,
+            location: {
+              lat: latestLocation.lat,
+              lng: latestLocation.lng,
+            },
+            distanceFromBusStop: Math.round(currentDistance),
+            hasPassedThrough: true,
+          };
+        }
+        
+        return null;
+      })
+    );
+    
+    // Filter out null values and sort by distance
+    return nearbyJeepneys
+      .filter((jeep): jeep is NonNullable<typeof jeep> => jeep !== null)
+      .sort((a, b) => a.distanceFromBusStop - b.distanceFromBusStop);
+  },
+});

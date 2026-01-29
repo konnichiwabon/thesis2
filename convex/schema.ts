@@ -4,7 +4,10 @@ import { v } from "convex/values";
 export default defineSchema({
   jeepneys: defineTable({
     jeepneyId: v.string(),       // Internal ID (e.g., "Jeep-01")
-    plateNumber: v.string(),     // NEW: Legal Plate (e.g., "GWH-123")
+    plateNumber: v.string(),     // Legal Plate (e.g., "GWH-123")
+    routeNumber: v.optional(v.string()), // Display route number (e.g., "04C", "62D")
+    color: v.optional(v.string()), // Custom color for the jeepney marker
+    operator: v.optional(v.string()), // Operator/Company name
     passengerCount: v.number(),
     lastUpdated: v.number(),
   }).index("by_jeepneyId", ["jeepneyId"]),
