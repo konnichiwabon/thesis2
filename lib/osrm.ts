@@ -45,8 +45,11 @@ export async function getRouteFromOSRM(waypoints: Waypoint[]): Promise<{
       .map(wp => `${wp.lng},${wp.lat}`)
       .join(';');
 
-    // OSRM API endpoint - using the public demo server
-    const url = `https://router.project-osrm.org/route/v1/driving/${coordinatesString}?overview=full&geometries=geojson`;
+    // OSRM API endpoint - using the public demo server with high-quality routing
+    // steps=true gives turn-by-turn instructions for more accurate road following
+    // continue_straight=false allows the router to make turns at intersections
+    // annotations=true provides additional route metadata
+    const url = `https://router.project-osrm.org/route/v1/driving/${coordinatesString}?overview=full&geometries=geojson&steps=true&annotations=true&continue_straight=false`;
 
     const response = await fetch(url);
     

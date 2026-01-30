@@ -7,6 +7,7 @@ export const addBusStop = mutation({
     lat: v.number(),
     lng: v.number(),
     color: v.string(),
+    passingRoutes: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
     const busStopId = await ctx.db.insert("busStops", {
@@ -14,6 +15,7 @@ export const addBusStop = mutation({
       lat: args.lat,
       lng: args.lng,
       color: args.color,
+      passingRoutes: args.passingRoutes,
     });
     return busStopId;
   },
@@ -23,6 +25,27 @@ export const getAllBusStops = query({
   handler: async (ctx) => {
     const busStops = await ctx.db.query("busStops").collect();
     return busStops;
+  },
+});
+
+export const updateBusStop = mutation({
+  args: {
+    id: v.id("busStops"),
+    name: v.string(),
+    lat: v.number(),
+    lng: v.number(),
+    color: v.string(),
+    passingRoutes: v.optional(v.array(v.string())),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, {
+      name: args.name,
+      lat: args.lat,
+      lng: args.lng,
+      color: args.color,
+      passingRoutes: args.passingRoutes,
+    });
+    return args.id;
   },
 });
 
@@ -51,7 +74,7 @@ function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
   return R * c; // Distance in meters
 }
 
-// Query to find jeepneys within 1km of a bus stop that have passed through that area
+// Query to find jeepneys within 1km of a bus stop
 export const getNearbyJeepneysAtBusStop = query({
   args: {
     busStopLat: v.number(),
@@ -64,9 +87,7 @@ export const getNearbyJeepneysAtBusStop = query({
     // Get all jeepneys
     const allJeepneys = await ctx.db.query("jeepneys").collect();
     
-    // For each jeepney, check:
-    // 1. If their current location is within radius
-    // 2. If they've ever passed through this bus stop area (check location history)
+    // For each jeepney, check if their current location is within radius
     const nearbyJeepneys = await Promise.all(
       allJeepneys.map(async (jeep) => {
         // Get current location
@@ -86,27 +107,8 @@ export const getNearbyJeepneysAtBusStop = query({
           latestLocation.lng
         );
         
-        const isCurrentlyNearby = currentDistance <= radius;
-        
-        // Check location history to see if this jeepney has passed through this area
-        const locationHistory = await ctx.db
-          .query("locations")
-          .filter((q) => q.eq(q.field("jeepneyId"), jeep.jeepneyId))
-          .collect();
-        
-        // Check if any historical location was within the bus stop area (within 50m for "passing through")
-        const hasPassedThrough = locationHistory.some(loc => {
-          const distance = calculateDistance(
-            args.busStopLat,
-            args.busStopLng,
-            loc.lat,
-            loc.lng
-          );
-          return distance <= 50; // 50 meters threshold for "passing through"
-        });
-        
-        // Only return jeepneys that are both nearby AND have passed through
-        if (isCurrentlyNearby && hasPassedThrough) {
+        // Return jeepney if it's currently within the radius
+        if (currentDistance <= radius) {
           return {
             ...jeep,
             location: {
@@ -114,7 +116,6 @@ export const getNearbyJeepneysAtBusStop = query({
               lng: latestLocation.lng,
             },
             distanceFromBusStop: Math.round(currentDistance),
-            hasPassedThrough: true,
           };
         }
         

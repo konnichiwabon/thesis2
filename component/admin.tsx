@@ -3,6 +3,13 @@
 import React, { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
+import StopManager from "./stopManager";
+import dynamic from "next/dynamic";
+
+// Dynamically import RouteManager with SSR disabled (Leaflet requires client-side rendering)
+const RouteManager = dynamic(() => import("./routeManager"), {
+  ssr: false,
+});
 
 const AdminPage = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -33,7 +40,8 @@ const AdminPage = () => {
   const [jeepneyColor, setJeepneyColor] = useState("#10b981");
   const [operator, setOperator] = useState("");
   const [editingJeepney, setEditingJeepney] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'busstops' | 'jeepneys'>('busstops');
+  const [activeTab, setActiveTab] = useState<'jeepneys' | 'stopmanager' | 'routes'>('stopmanager');
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
   const [isSampleLoading, setIsSampleLoading] = useState(false);
   const [sampleMessage, setSampleMessage] = useState("");
@@ -55,19 +63,19 @@ const AdminPage = () => {
   // Show password prompt if not authenticated
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-8">
-        <div className="bg-white rounded-lg shadow-md p-8 max-w-md w-full">
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-8">
+        <div className="bg-gray-800 rounded-lg shadow-2xl p-8 max-w-md w-full border border-gray-700">
           <div className="text-center mb-6">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-16 h-16 mx-auto text-gray-700 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-16 h-16 mx-auto text-blue-400 mb-4">
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
             </svg>
-            <h1 className="text-2xl font-bold text-gray-800">Admin Access</h1>
-            <p className="text-gray-600 mt-2">Please enter the password to continue</p>
+            <h1 className="text-2xl font-bold text-white">Admin Access</h1>
+            <p className="text-gray-300 mt-2 font-semibold">Please enter the password to continue</p>
           </div>
           
           <form onSubmit={handlePasswordSubmit} className="space-y-4">
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
                 Password
               </label>
               <input
@@ -75,12 +83,12 @@ const AdminPage = () => {
                 id="password"
                 value={passwordInput}
                 onChange={(e) => setPasswordInput(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder-gray-400"
                 placeholder="Enter password"
                 autoFocus
               />
               {passwordError && (
-                <p className="text-red-500 text-sm mt-2">{passwordError}</p>
+                <p className="text-red-400 text-sm mt-2">{passwordError}</p>
               )}
             </div>
             
@@ -246,46 +254,83 @@ const AdminPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
+    <div className={`min-h-screen p-8 ${
+      isDarkMode ? 'bg-gray-900' : 'bg-gray-100'
+    }`}>
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Bus Stop Admin Panel</h1>
-          <a 
-            href="/" 
-            className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
-          >
-            ← Back to Map
-          </a>
+          <h1 className={`text-3xl font-bold ${
+            isDarkMode ? 'text-white' : 'text-gray-900'
+          }`}>Bus Stop Admin Panel</h1>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              className={`px-4 py-2 rounded-md font-medium transition-all ${
+                isDarkMode
+                  ? 'bg-yellow-500 hover:bg-yellow-600 text-gray-900'
+                  : 'bg-gray-800 hover:bg-gray-900 text-white border border-gray-600'
+              }`}
+              title={`Switch to ${isDarkMode ? 'Light' : 'Dark'} Mode`}
+            >
+              {isDarkMode ? '☀️' : '🌙'}
+            </button>
+            <a 
+              href="/" 
+              className={`px-4 py-2 rounded-md transition-colors border ${
+                isDarkMode
+                  ? 'bg-gray-700 text-white hover:bg-gray-600 border-gray-600'
+                  : 'bg-white text-gray-900 hover:bg-gray-100 border-gray-300'
+              }`}
+            >
+              ← Back to Map
+            </a>
+          </div>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex gap-2 mb-6">
-          <button
-            onClick={() => setActiveTab('busstops')}
-            className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${
-              activeTab === 'busstops'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-100'
-            }`}
-          >
-            🚏 Bus Stops
-          </button>
+        <div className="flex gap-3 mb-6">
           <button
             onClick={() => setActiveTab('jeepneys')}
-            className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${
+            className={`flex-1 py-3 px-6 rounded-lg font-medium transition-all text-center ${
               activeTab === 'jeepneys'
                 ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-100'
+                : isDarkMode
+                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 border border-gray-600'
+                : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
             }`}
           >
             🚍 Jeepneys
           </button>
+          <button
+            onClick={() => setActiveTab('stopmanager')}
+            className={`flex-1 py-3 px-6 rounded-lg font-medium transition-all text-center ${
+              activeTab === 'stopmanager'
+                ? 'bg-blue-600 text-white'
+                : isDarkMode
+                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 border border-gray-600'
+                : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+            }`}
+          >
+            📍 Stop Manager
+          </button>
+          <button
+            onClick={() => setActiveTab('routes')}
+            className={`flex-1 py-3 px-6 rounded-lg font-medium transition-all text-center ${
+              activeTab === 'routes'
+                ? 'bg-blue-600 text-white'
+                : isDarkMode
+                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 border border-gray-600'
+                : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+            }`}
+          >
+            🗺️ Routes
+          </button>
         </div>
         
         {/* Add Sample Jeepney Data */}
-        <div className="bg-linear-to-r from-green-50 to-blue-50 rounded-lg shadow-md p-6 mb-8 border-2 border-green-200">
-          <h2 className="text-xl font-semibold mb-3 text-gray-800">🚍 Test Jeepney Data</h2>
-          <p className="text-gray-600 mb-4 text-sm">
+        <div className="bg-gradient-to-r from-green-900 to-blue-900 rounded-lg shadow-lg p-6 mb-8 border-2 border-green-700">
+          <h2 className="text-xl font-semibold mb-3 text-white">🚍 Test Jeepney Data</h2>
+          <p className="text-gray-300 mb-4 text-sm">
             Add sample jeepney with location history that passes through your bus stops. This helps you test the 1km scanning feature.
           </p>
           <button
@@ -305,16 +350,32 @@ const AdminPage = () => {
         </div>
         
         {/* Conditional Content Based on Active Tab */}
+        {activeTab === 'routes' && (
+          <RouteManager isDarkMode={isDarkMode} />
+        )}
+        
+        {activeTab === 'stopmanager' && (
+          <StopManager isDarkMode={isDarkMode} />
+        )}
+        
         {activeTab === 'jeepneys' && (
           <>
             {/* Add/Edit Jeepney Form */}
-            <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-              <h2 className="text-xl font-semibold mb-4">
+            <div className={`rounded-lg shadow-lg p-6 mb-8 border ${
+              isDarkMode
+                ? 'bg-gray-800 border-gray-700'
+                : 'bg-white border-gray-300'
+            }`}>
+              <h2 className={`text-xl font-semibold mb-4 ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>
                 {editingJeepney ? "Edit Jeepney" : "Add New Jeepney"}
               </h2>
               <form onSubmit={handleJeepneySubmit} className="space-y-4">
                 <div>
-                  <label htmlFor="jeepneyId" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="jeepneyId" className={`block text-sm font-bold mb-1 ${
+                    isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
                     Jeepney ID
                   </label>
                   <input
@@ -323,14 +384,20 @@ const AdminPage = () => {
                     value={jeepneyId}
                     onChange={(e) => setJeepneyId(e.target.value)}
                     disabled={!!editingJeepney}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+                    className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      isDarkMode
+                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 disabled:bg-gray-800'
+                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 disabled:bg-gray-100'
+                    }`}
                     placeholder="e.g., Jeep-01"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="plateNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="plateNumber" className={`block text-sm font-bold mb-1 ${
+                      isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                    }`}>
                       Plate Number
                     </label>
                     <input
@@ -338,13 +405,19 @@ const AdminPage = () => {
                       id="plateNumber"
                       value={plateNumber}
                       onChange={(e) => setPlateNumber(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                        isDarkMode
+                          ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                      }`}
                       placeholder="e.g., ABC-123"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="routeNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="routeNumber" className={`block text-sm font-bold mb-1 ${
+                      isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                    }`}>
                       Route Number
                     </label>
                     <input
@@ -352,14 +425,20 @@ const AdminPage = () => {
                       id="routeNumber"
                       value={routeNumber}
                       onChange={(e) => setRouteNumber(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                        isDarkMode
+                          ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                      }`}
                       placeholder="e.g., 04C, 62D"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="operator" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="operator" className={`block text-sm font-bold mb-1 ${
+                    isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
                     Operator/Company
                   </label>
                   <input
@@ -367,13 +446,19 @@ const AdminPage = () => {
                     id="operator"
                     value={operator}
                     onChange={(e) => setOperator(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      isDarkMode
+                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                    }`}
                     placeholder="e.g., ABC Transport Cooperative"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="jeepneyColor" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="jeepneyColor" className={`block text-sm font-bold mb-1 ${
+                    isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
                     Marker Color
                   </label>
                   <div className="flex items-center gap-4">
@@ -382,9 +467,15 @@ const AdminPage = () => {
                       id="jeepneyColor"
                       value={jeepneyColor}
                       onChange={(e) => setJeepneyColor(e.target.value)}
-                      className="h-10 w-20 border border-gray-300 rounded cursor-pointer"
+                      className={`h-10 w-20 border rounded cursor-pointer ${
+                        isDarkMode
+                          ? 'bg-gray-700 border-gray-600'
+                          : 'bg-white border-gray-300'
+                      }`}
                     />
-                    <span className="text-gray-600">{jeepneyColor}</span>
+                    <span className={`font-bold ${
+                      isDarkMode ? 'text-white' : 'text-gray-900'
+                    }`}>{jeepneyColor}</span>
                     <div className="flex gap-2">
                       <button type="button" onClick={() => setJeepneyColor("#10b981")} className="px-3 py-1 bg-green-500 rounded text-white text-sm">Green</button>
                       <button type="button" onClick={() => setJeepneyColor("#f59e0b")} className="px-3 py-1 bg-yellow-500 rounded text-white text-sm">Yellow</button>
@@ -412,7 +503,11 @@ const AdminPage = () => {
                         setJeepneyColor("#10b981");
                         setOperator("");
                       }}
-                      className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors font-medium"
+                      className={`px-4 py-2 rounded-md transition-colors font-medium ${
+                        isDarkMode
+                          ? 'bg-gray-500 text-white hover:bg-gray-600'
+                          : 'bg-gray-300 text-gray-900 hover:bg-gray-400'
+                      }`}
                     >
                       Cancel
                     </button>
@@ -422,19 +517,33 @@ const AdminPage = () => {
             </div>
 
             {/* List of Jeepneys */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold mb-4">Registered Jeepneys</h2>
+            <div className={`rounded-lg shadow-lg p-6 border ${
+              isDarkMode
+                ? 'bg-gray-800 border-gray-700'
+                : 'bg-white border-gray-300'
+            }`}>
+              <h2 className={`text-xl font-semibold mb-4 ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>Registered Jeepneys</h2>
               
               {!allJeepneys ? (
-                <p className="text-gray-500">Loading...</p>
+                <p className={`font-bold ${
+                  isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                }`}>Loading...</p>
               ) : allJeepneys.length === 0 ? (
-                <p className="text-gray-500">No jeepneys added yet.</p>
+                <p className={`font-bold ${
+                  isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                }`}>No jeepneys added yet.</p>
               ) : (
                 <div className="space-y-3">
                   {allJeepneys.map((jeep) => (
                     <div
                       key={jeep._id}
-                      className="flex items-center justify-between p-4 border border-gray-200 rounded-md hover:bg-gray-50"
+                      className={`flex items-center justify-between p-4 border rounded-md transition-colors ${
+                        isDarkMode
+                          ? 'border-gray-700 hover:bg-gray-700 bg-gray-750'
+                          : 'border-gray-300 hover:bg-gray-50 bg-white'
+                      }`}
                     >
                       <div className="flex items-center gap-4">
                         <div
@@ -444,10 +553,10 @@ const AdminPage = () => {
                           {jeep.routeNumber || "?"}
                         </div>
                         <div>
-                          <h3 className="font-medium text-gray-800">
+                          <h3 className={`font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                             {jeep.routeNumber} - {jeep.plateNumber}
                           </h3>
-                          <p className="text-sm text-gray-500">
+                          <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                             ID: {jeep.jeepneyId} | Operator: {jeep.operator || "N/A"}
                           </p>
                         </div>
@@ -472,122 +581,6 @@ const AdminPage = () => {
               )}
             </div>
           </>
-        )}
-        
-        {activeTab === 'busstops' && (
-          <>
-        {/* Add Bus Stop Form */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-4">Add New Bus Stop</h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                Bus Stop Name
-              </label>
-              <input
-                type="text"
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="e.g., SM City Bus Stop"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="latitude" className="block text-sm font-medium text-gray-700 mb-1">
-                  Latitude
-                </label>
-                <input
-                  type="text"
-                  id="latitude"
-                  value={latitude}
-                  onChange={(e) => setLatitude(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="e.g., 10.3157"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="longitude" className="block text-sm font-medium text-gray-700 mb-1">
-                  Longitude
-                </label>
-                <input
-                  type="text"
-                  id="longitude"
-                  value={longitude}
-                  onChange={(e) => setLongitude(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="e.g., 123.8854"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="color" className="block text-sm font-medium text-gray-700 mb-1">
-                Circle Color
-              </label>
-              <div className="flex items-center gap-4">
-                <input
-                  type="color"
-                  id="color"
-                  value={color}
-                  onChange={(e) => setColor(e.target.value)}
-                  className="h-10 w-20 border border-gray-300 rounded cursor-pointer"
-                />
-                <span className="text-gray-600">{color}</span>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors font-medium"
-            >
-              Add Bus Stop
-            </button>
-          </form>
-        </div>
-
-        {/* List of Bus Stops */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4">Existing Bus Stops</h2>
-          
-          {!busStops ? (
-            <p className="text-gray-500">Loading...</p>
-          ) : busStops.length === 0 ? (
-            <p className="text-gray-500">No bus stops added yet.</p>
-          ) : (
-            <div className="space-y-3">
-              {busStops.map((stop) => (
-                <div
-                  key={stop._id}
-                  className="flex items-center justify-between p-4 border border-gray-200 rounded-md hover:bg-gray-50"
-                >
-                  <div className="flex items-center gap-4">
-                    <div
-                      className="w-8 h-8 rounded-full border-2"
-                      style={{ backgroundColor: stop.color, borderColor: stop.color }}
-                    />
-                    <div>
-                      <h3 className="font-medium text-gray-800">{stop.name}</h3>
-                      <p className="text-sm text-gray-500">
-                        Lat: {stop.lat.toFixed(4)}, Lng: {stop.lng.toFixed(4)}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => handleDelete(stop._id)}
-                    className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
-                  >
-                    Delete
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        </>
         )}
       </div>
     </div>

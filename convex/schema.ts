@@ -28,6 +28,7 @@ export default defineSchema({
     lat: v.number(),
     lng: v.number(),
     color: v.string(), // e.g., "#FF5733"
+    passingRoutes: v.optional(v.array(v.string())), // Array of route names (e.g., ["62B", "62C"])
   }),
 
   routes: defineTable({
