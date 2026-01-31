@@ -1,4 +1,4 @@
-import { mutation } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
 export const saveLocation = mutation({
@@ -60,9 +60,6 @@ export const saveLocation = mutation({
     return "Jeep status updated!";
   },
 });
-
-
-import { query, mutation } from "./_generated/server";
 
 // Helper function to generate random plate number
 function generatePlateNumber(): string {
