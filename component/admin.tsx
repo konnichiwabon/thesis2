@@ -254,18 +254,18 @@ const AdminPage = () => {
   };
 
   return (
-    <div className={`min-h-screen p-8 ${
+    <div className={`min-h-screen p-4 sm:p-6 lg:p-8 ${
       isDarkMode ? 'bg-gray-900' : 'bg-gray-100'
     }`}>
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className={`text-3xl font-bold ${
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <h1 className={`text-2xl sm:text-3xl font-bold ${
             isDarkMode ? 'text-white' : 'text-gray-900'
           }`}>Bus Stop Admin Panel</h1>
-          <div className="flex gap-3">
+          <div className="flex gap-2 sm:gap-3">
             <button
               onClick={() => setIsDarkMode(!isDarkMode)}
-              className={`px-4 py-2 rounded-md font-medium transition-all ${
+              className={`px-3 py-2 sm:px-4 rounded-md font-medium transition-all ${
                 isDarkMode
                   ? 'bg-yellow-500 hover:bg-yellow-600 text-gray-900'
                   : 'bg-gray-800 hover:bg-gray-900 text-white border border-gray-600'
@@ -276,7 +276,7 @@ const AdminPage = () => {
             </button>
             <a 
               href="/" 
-              className={`px-4 py-2 rounded-md transition-colors border ${
+              className={`px-3 py-2 sm:px-4 rounded-md transition-colors border whitespace-nowrap ${
                 isDarkMode
                   ? 'bg-gray-700 text-white hover:bg-gray-600 border-gray-600'
                   : 'bg-white text-gray-900 hover:bg-gray-100 border-gray-300'
@@ -288,10 +288,10 @@ const AdminPage = () => {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex gap-3 mb-6">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-6">
           <button
             onClick={() => setActiveTab('jeepneys')}
-            className={`flex-1 py-3 px-6 rounded-lg font-medium transition-all text-center ${
+            className={`flex-1 py-3 px-4 sm:px-6 rounded-lg font-medium transition-all text-center ${
               activeTab === 'jeepneys'
                 ? 'bg-blue-600 text-white'
                 : isDarkMode
@@ -303,7 +303,7 @@ const AdminPage = () => {
           </button>
           <button
             onClick={() => setActiveTab('stopmanager')}
-            className={`flex-1 py-3 px-6 rounded-lg font-medium transition-all text-center ${
+            className={`flex-1 py-3 px-4 sm:px-6 rounded-lg font-medium transition-all text-center ${
               activeTab === 'stopmanager'
                 ? 'bg-blue-600 text-white'
                 : isDarkMode
@@ -315,7 +315,7 @@ const AdminPage = () => {
           </button>
           <button
             onClick={() => setActiveTab('routes')}
-            className={`flex-1 py-3 px-6 rounded-lg font-medium transition-all text-center ${
+            className={`flex-1 py-3 px-4 sm:px-6 rounded-lg font-medium transition-all text-center ${
               activeTab === 'routes'
                 ? 'bg-blue-600 text-white'
                 : isDarkMode
@@ -328,20 +328,20 @@ const AdminPage = () => {
         </div>
         
         {/* Add Sample Jeepney Data */}
-        <div className="bg-gradient-to-r from-green-900 to-blue-900 rounded-lg shadow-lg p-6 mb-8 border-2 border-green-700">
-          <h2 className="text-xl font-semibold mb-3 text-white">🚍 Test Jeepney Data</h2>
-          <p className="text-gray-300 mb-4 text-sm">
+        <div className="bg-gradient-to-r from-green-900 to-blue-900 rounded-lg shadow-lg p-4 sm:p-6 mb-6 sm:mb-8 border-2 border-green-700">
+          <h2 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 text-white">🚍 Test Jeepney Data</h2>
+          <p className="text-gray-300 mb-3 sm:mb-4 text-sm">
             Add sample jeepney with location history that passes through your bus stops. This helps you test the 1km scanning feature.
           </p>
           <button
             onClick={handleAddSampleData}
             disabled={isSampleLoading}
-            className="w-full bg-green-600 text-white py-3 px-4 rounded-md hover:bg-green-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="w-full bg-green-600 text-white py-2.5 sm:py-3 px-4 rounded-md hover:bg-green-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed text-sm sm:text-base"
           >
             {isSampleLoading ? "Adding Sample Data..." : "➕ Add Sample Jeepney"}
           </button>
           {sampleMessage && (
-            <div className={`mt-4 p-3 rounded-md ${
+            <div className={`mt-3 sm:mt-4 p-3 rounded-md text-sm ${
               sampleMessage.includes('✅') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
             }`}>
               {sampleMessage}
