@@ -8,6 +8,19 @@ import { api } from "@/convex/_generated/api";
 import { getLoadStatus } from "@/types/jeepney";
 import type { JeepneyMapMarker, JeepneyCarouselItem } from "@/types/jeepney";
 
+// Interface for jeepney data from Convex
+interface JeepneyData {
+  jeepneyId: string;
+  plateNumber: string;
+  passengerCount: number;
+  routeNumber?: string;
+  color?: string;
+  location: {
+    lat: number;
+    lng: number;
+  } | null;
+}
+
 // Dynamically import MapComponent with SSR disabled
 const MapComponent = dynamic(() => import('@/component/map'), {
   ssr: false,
@@ -63,7 +76,7 @@ export default function Home() {
   // Keep selectedJeep in sync with Convex data (but not during manual updates)
   useEffect(() => {
     if (selectedJeep && jeepneysData && !isUpdating) {
-      const updatedJeep = jeepneysData.find(j => j.jeepneyId === selectedJeep.jeepneyId);
+      const updatedJeep = jeepneysData.find((j: JeepneyData) => j.jeepneyId === selectedJeep.jeepneyId);
       if (updatedJeep && updatedJeep.passengerCount !== selectedJeep.passengerCount) {
         setSelectedJeep(updatedJeep);
       }
@@ -102,7 +115,7 @@ export default function Home() {
   };
 
   // Convert Convex data to carousel items
-  const carouselItems = jeepneysData?.map((jeep, index) => ({
+  const carouselItems = jeepneysData?.map((jeep: JeepneyData, index: number) => ({
     id: index + 1,
     route: jeep.jeepneyId,
     plateNumber: jeep.plateNumber,
@@ -113,7 +126,7 @@ export default function Home() {
   })) || [];
 
   // Get jeepney locations for map markers
-  const jeepLocations = jeepneysData?.filter(jeep => jeep.location !== null).map(jeep => ({
+  const jeepLocations = jeepneysData?.filter((jeep: JeepneyData) => jeep.location !== null).map((jeep: JeepneyData) => ({
     id: jeep.jeepneyId,
     plateNumber: jeep.plateNumber,
     passengerCount: jeep.passengerCount,
@@ -268,7 +281,7 @@ export default function Home() {
           <Carousel 
             items={carouselItems}
             onItemClick={(item) => {
-              const jeep = jeepneysData?.find(j => j.jeepneyId === item.route);
+              const jeep = jeepneysData?.find((j: JeepneyData) => j.jeepneyId === item.route);
               if (jeep && jeep.location) {
                 setSelectedJeep(jeep);
                 setMapCenter([jeep.location.lat, jeep.location.lng]);

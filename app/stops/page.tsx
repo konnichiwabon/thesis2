@@ -1,12 +1,19 @@
 "use client";
 
-import StopManager from "@/component/stopManager";
+import dynamic from "next/dynamic";
 import { useState } from "react";
+
+// Dynamically import StopManager with SSR disabled
+const StopManager = dynamic(() => import("@/component/stopManager"), {
+  ssr: false,
+  loading: () => <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white">Loading...</div>
+});
 
 export default function StopManagerPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
   // Password check
   const ADMIN_PASSWORD = "admin123"; // Change this to your desired password
@@ -91,5 +98,5 @@ export default function StopManagerPage() {
     );
   }
 
-  return <StopManager />;
+  return <StopManager isDarkMode={isDarkMode} />;
 }
