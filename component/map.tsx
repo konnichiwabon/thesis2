@@ -71,12 +71,12 @@ function BusStopsLayer({ busStops, onBusStopClick, selectedBusStop, routesPassin
     return null;
   }
 
-  // Calculate size based on zoom level
+  // Calculate size based on zoom level - smaller than jeepney markers
   const getSize = () => {
-    if (zoom >= 18) return 24;
-    if (zoom >= 16) return 28;
-    if (zoom >= 15) return 32;
-    return 36;
+    if (zoom >= 18) return 20;
+    if (zoom >= 16) return 22;
+    if (zoom >= 15) return 24;
+    return 26;
   };
 
   const size = getSize();
@@ -94,22 +94,28 @@ function BusStopsLayer({ busStops, onBusStopClick, selectedBusStop, routesPassin
               justify-content: center;
             ">
               <div style="
-                background: ${stop.color};
-                border-radius: 8px;
+                background: white;
+                border-radius: 50%;
                 width: ${size}px;
                 height: ${size}px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-                border: 3px solid white;
-                font-size: ${size * 0.7}px;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+                border: 2px solid ${stop.color};
                 cursor: pointer;
                 transition: transform 0.2s;
               "
-              onmouseover="this.style.transform='scale(1.15)'"
+              onmouseover="this.style.transform='scale(1.1)'"
               onmouseout="this.style.transform='scale(1)'"
-              >🚏</div>
+              >
+                <div style="
+                  width: ${size * 0.45}px;
+                  height: ${size * 0.45}px;
+                  background: ${stop.color};
+                  border-radius: 50%;
+                "></div>
+              </div>
             </div>
           `,
           iconSize: [size, size],
