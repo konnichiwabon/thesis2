@@ -50,8 +50,8 @@ export default function JeepneyMarker({
     html: `
       <div style="
         position: relative;
-        width: 48px;
-        height: 48px;
+        width: 50px;
+        height: 70px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -59,54 +59,71 @@ export default function JeepneyMarker({
         ${isNearbyBusStop ? `
           <div style="
             position: absolute;
-            top: 50%;
+            top: 15px;
             left: 50%;
-            transform: translate(-50%, -50%);
-            width: 60px;
-            height: 60px;
+            transform: translateX(-50%);
+            width: 70px;
+            height: 70px;
             background: rgba(59, 130, 246, 0.3);
             border-radius: 50%;
             animation: pulse 2s infinite;
           "></div>
         ` : ''}
         
-        <div style="
-          position: relative;
-          width: 48px;
-          height: 48px;
-          background: ${isNearbyBusStop ? '#3b82f6' : markerColor};
-          border-radius: 12px;
-          border: 3px solid white;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
+        <svg width="50" height="70" viewBox="0 0 50 70" style="
+          filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));
           cursor: pointer;
           transition: transform 0.2s;
         "
         onmouseover="this.style.transform='scale(1.1)'"
         onmouseout="this.style.transform='scale(1)'"
         >
-          <div style="
-            font-size: 18px;
-            line-height: 1;
-            margin-bottom: 2px;
-          ">🚍</div>
+          <!-- Pin shape -->
+          <defs>
+            <clipPath id="pin-clip-${jeep.id}">
+              <circle cx="25" cy="25" r="23"/>
+            </clipPath>
+          </defs>
+          
+          <!-- Pin body (teardrop shape) -->
+          <path d="M 25 1 
+                   C 11.7 1, 1 11.7, 1 25 
+                   C 1 38.3, 11.7 49, 25 49 
+                   C 38.3 49, 49 38.3, 49 25 
+                   C 49 11.7, 38.3 1, 25 1 Z" 
+                fill="${isNearbyBusStop ? '#3b82f6' : markerColor}" 
+                stroke="white" 
+                stroke-width="3"/>
+          
+          <!-- Pin point -->
+          <path d="M 25 49 L 17 62 L 25 69 L 33 62 Z" 
+                fill="${isNearbyBusStop ? '#3b82f6' : markerColor}" 
+                stroke="white" 
+                stroke-width="2"/>
+          
+          <!-- Inner circle (white background for content) -->
+          <circle cx="25" cy="25" r="18" fill="white" opacity="0.95"/>
+          
+          <!-- Jeepney emoji/icon -->
+          <text x="25" y="23" 
+                font-size="20" 
+                text-anchor="middle" 
+                dominant-baseline="middle">🚍</text>
+          
           ${showRouteNumber ? `
-            <div style="
-              font-size: 10px;
-              font-weight: bold;
-              color: white;
-              text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-              line-height: 1;
-            ">${displayRouteNumber}</div>
+            <!-- Route number -->
+            <text x="25" y="35" 
+                  font-size="9" 
+                  font-weight="bold" 
+                  text-anchor="middle" 
+                  fill="#374151" 
+                  dominant-baseline="middle">${displayRouteNumber}</text>
           ` : ''}
-        </div>
+        </svg>
       </div>
     `,
-    iconSize: [48, 48],
-    iconAnchor: [24, 24],
+    iconSize: [50, 70],
+    iconAnchor: [25, 70],
   });
   
   return (

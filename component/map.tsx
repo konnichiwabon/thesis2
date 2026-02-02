@@ -1,9 +1,9 @@
 "use client"
 
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, useMap, CircleMarker, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, useMap, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
+import L, { DivIcon } from 'leaflet';
 import BusStopPopup from './busStopPopup';
 import JeepneyMarker from './jeepneyMarker';
 import JeepneyMarkerPopup from './jeepneyMarkerPopup';
@@ -71,28 +71,66 @@ function BusStopsLayer({ busStops, onBusStopClick, selectedBusStop, routesPassin
     return null;
   }
 
+  // Calculate size based on zoom level
+  const getSize = () => {
+    if (zoom >= 18) return 24;
+    if (zoom >= 16) return 28;
+    if (zoom >= 15) return 32;
+    return 36;
+  };
+
+  const size = getSize();
+
   return (
     <>
-      {busStops.map((stop) => (
-        <CircleMarker
-          key={stop._id}
-          center={[stop.lat, stop.lng]}
-          radius={8}
-          pathOptions={{
-            fillColor: stop.color,
-            fillOpacity: 0.6,
-            color: stop.color,
-            weight: 1.5
-          }}
-          eventHandlers={{
-            click: () => {
-              if (onBusStopClick) {
-                onBusStopClick(stop);
+      {busStops.map((stop) => {
+        const stopIcon = new DivIcon({
+          className: 'custom-jeepney-stop-marker',
+          html: `
+            <div style="
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+            ">
+              <div style="
+                background: ${stop.color};
+                border-radius: 8px;
+                width: ${size}px;
+                height: ${size}px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                border: 3px solid white;
+                font-size: ${size * 0.7}px;
+                cursor: pointer;
+                transition: transform 0.2s;
+              "
+              onmouseover="this.style.transform='scale(1.15)'"
+              onmouseout="this.style.transform='scale(1)'"
+              >🚏</div>
+            </div>
+          `,
+          iconSize: [size, size],
+          iconAnchor: [size / 2, size / 2],
+        });
+
+        return (
+          <Marker
+            key={stop._id}
+            position={[stop.lat, stop.lng]}
+            icon={stopIcon}
+            eventHandlers={{
+              click: () => {
+                if (onBusStopClick) {
+                  onBusStopClick(stop);
+                }
               }
-            }
-          }}
-        />
-      ))}
+            }}
+          />
+        );
+      })}
     </>
   );
 }
