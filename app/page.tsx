@@ -1,6 +1,7 @@
 "use client"
 import CardBox from "@/component/cardBox";
 import Carousel from "@/component/carousel";
+import BusStopCarousel from "@/component/busStopCarousel";
 import dynamic from 'next/dynamic';
 import { useState, useEffect } from 'react';
 import { useConvexConnectionState, useQuery, useMutation } from "convex/react";
@@ -167,7 +168,12 @@ export default function Home() {
     
     setShowCarousel(false);
     setShowCardBox(false);
-    setMapCenter([busStop.lat, busStop.lng]);
+    setSelectedJeep(null);
+    
+    // Set map center with a slight delay to ensure state updates properly
+    setTimeout(() => {
+      setMapCenter([busStop.lat, busStop.lng]);
+    }, 100);
   };
 
   return (
@@ -293,47 +299,37 @@ export default function Home() {
         </div>
       )}
 
-      {/* Bus Stop Info Banner - Shows when a bus stop is selected */}
+      {/* Bus Stop Carousel - Shows when a bus stop is selected */}
       {selectedBusStop && nearbyJeepneys && nearbyJeepneys.length > 0 && (
-        <div className="absolute top-4 left-4 right-4 z-20 bg-blue-600 text-white rounded-lg shadow-lg p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <h3 className="font-bold text-lg">📍 {selectedBusStop.name}</h3>
-              <p className="text-sm opacity-90 mt-1">
-                Found <span className="font-bold">{nearbyJeepneys.length}</span> jeepney(s) within 1km that passed through this stop
-              </p>
-              <div className="flex gap-2 mt-2 flex-wrap">
-                {nearbyJeepneys.map((jeep: any) => (
-                  <button
-                    key={jeep.jeepneyId}
-                    onClick={() => {
-                      setSelectedJeep(jeep);
-                      setShowCardBox(true);
-                      if (jeep.location) {
-                        setMapCenter([jeep.location.lat, jeep.location.lng]);
-                      }
-                    }}
-                    className="bg-white text-blue-600 px-3 py-1 rounded-full text-xs font-bold hover:bg-blue-50 transition-colors"
-                  >
-                    🚍 {jeep.plateNumber} ({jeep.distanceFromBusStop}m away)
-                  </button>
-                ))}
-              </div>
-            </div>
-            <button
-              onClick={() => {
-                setSelectedBusStop(null);
-                setRoutesPassingThrough([]);
-                setNearbyJeepneys([]);
-                setBusStopCoords(null);
-                setShowCarousel(true);
-              }}
-              className="text-white hover:text-blue-200 text-2xl font-bold ml-4"
-            >
-              ×
-            </button>
-          </div>
-        </div>
+        <BusStopCarousel
+          busStopName={selectedBusStop.name}
+          jeepneys={nearbyJeepneys.map((jeep: any) => ({
+            jeepneyId: jeep.jeepneyId,
+            plateNumber: jeep.plateNumber,
+            passengerCount: jeep.passengerCount,
+            location: jeep.location,
+            distance: jeep.distanceFromBusStop
+          }))}
+          onClose={() => {
+            setSelectedBusStop(null);
+            setRoutesPassingThrough([]);
+            setNearbyJeepneys([]);
+            setBusStopCoords(null);
+            setShowCarousel(true);
+          }}
+          onJeepneyClick={(jeep) => {
+            setSelectedJeep(jeep);
+            setShowCardBox(true);
+            setShowCarousel(false);
+            setSelectedBusStop(null);
+            setRoutesPassingThrough([]);
+            setNearbyJeepneys([]);
+            setBusStopCoords(null);
+            if (jeep.location) {
+              setMapCenter([jeep.location.lat, jeep.location.lng]);
+            }
+          }}
+        />
       )}
       
       {showCardBox && selectedJeep && (
