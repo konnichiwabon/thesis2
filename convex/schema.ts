@@ -11,6 +11,8 @@ export default defineSchema({
     maxLoad: v.optional(v.number()),   // Max passenger capacity (default 40)
     passengerCount: v.number(),
     lastUpdated: v.number(),
+    lat: v.optional(v.number()),  // Latest GPS latitude
+    lng: v.optional(v.number()),  // Latest GPS longitude
   }).index("by_jeepneyId", ["jeepneyId"]),
 
   locations: defineTable({

@@ -32,8 +32,8 @@ export const saveLocation = mutation({
       // (plateNumber, routeNumber, operator, maxLoad, color are set via Admin Panel)
       await ctx.db.patch(currentJeepStatus._id, {
         passengerCount: newTotal,
-        lastUpdated: Date.now(),
-      });
+        lastUpdated: Date.now(),        lat: args.latitude,
+        lng: args.longitude,      });
     } else {
       // First time seeing this jeep — create with minimal data
       // Admin should register the jeep first via /admin for full details
@@ -73,26 +73,12 @@ export const getJeepneysWithLocations = query({
   args: {},
   handler: async (ctx) => {
     const jeepneys = await ctx.db.query("jeepneys").collect();
-    
-    const jeepneysWithLocations = await Promise.all(
-      jeepneys.map(async (jeep) => {
-        // Get the most recent location for this jeep
-        const latestLocation = await ctx.db
-          .query("locations")
-          .filter((q) => q.eq(q.field("jeepneyId"), jeep.jeepneyId))
-          .order("desc")
-          .first();
-        
-        return {
-          ...jeep,
-          location: latestLocation ? {
-            lat: latestLocation.lat,
-            lng: latestLocation.lng,
-          } : null,
-        };
-      })
-    );
-    
-    return jeepneysWithLocations.filter((jeep) => jeep.location !== null);
+
+    return jeepneys
+      .filter((jeep) => jeep.lat != null && jeep.lng != null)
+      .map((jeep) => ({
+        ...jeep,
+        location: { lat: jeep.lat!, lng: jeep.lng! },
+      }));
   },
 });
