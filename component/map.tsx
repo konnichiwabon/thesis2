@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, useMap, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L, { DivIcon } from 'leaflet';
-import BusStopPopup from './busStopPopup';
+import BusStopPopup from './jeepStopPopup';
 import JeepneyMarker from './jeepneyMarker';
 import JeepneyMarkerPopup from './jeepneyMarkerPopup';
 
