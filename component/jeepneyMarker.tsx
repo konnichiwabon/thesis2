@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import PopupCard from './popupcard';
+import { useAnimatedPosition } from '@/lib/useAnimatedPosition';
 
 interface JeepneyMarkerProps {
   jeep: {
@@ -29,12 +30,17 @@ export default function JeepneyMarker({
   const markerRef = useRef<any>(null);
   const isNearbyBusStop = nearbyJeepneys?.some(nj => nj.jeepneyId === jeep.id);
 
-  // Directly update the Leaflet marker position whenever Convex sends new GPS data
+  // Smoothly animate marker to the latest GPS position from Convex
+  const animatedPosition = useAnimatedPosition(jeep.position, jeep.id, {
+    duration: 2000, // 2-second smooth transition between GPS updates
+  });
+
+  // Directly update the Leaflet marker position whenever the animated position changes
   useEffect(() => {
     if (markerRef.current) {
-      markerRef.current.setLatLng(jeep.position);
+      markerRef.current.setLatLng(animatedPosition);
     }
-  }, [jeep.position[0], jeep.position[1]]);
+  }, [animatedPosition[0], animatedPosition[1]]);
   
   // Get color based on load status
   const getStatusColor = () => {
@@ -137,7 +143,7 @@ export default function JeepneyMarker({
   return (
     <Marker 
       ref={markerRef}
-      position={jeep.position}
+      position={animatedPosition}
       icon={customIcon}
     >
       <Popup autoPan={true} keepInView={true}>
