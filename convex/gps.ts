@@ -42,6 +42,8 @@ export const saveLocation = mutation({
         plateNumber: args.plateNumber ?? "UNREGISTERED",
         passengerCount: newTotal,
         lastUpdated: Date.now(),
+        lat: args.latitude,
+        lng: args.longitude,
       });
     }
 

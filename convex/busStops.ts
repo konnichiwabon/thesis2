@@ -88,40 +88,27 @@ export const getNearbyJeepneysAtBusStop = query({
     const allJeepneys = await ctx.db.query("jeepneys").collect();
     
     // For each jeepney, check if their current location is within radius
-    const nearbyJeepneys = await Promise.all(
-      allJeepneys.map(async (jeep) => {
-        // Get current location
-        const latestLocation = await ctx.db
-          .query("locations")
-          .filter((q) => q.eq(q.field("jeepneyId"), jeep.jeepneyId))
-          .order("desc")
-          .first();
-        
-        if (!latestLocation) return null;
-        
-        // Check if current location is within radius
-        const currentDistance = calculateDistance(
-          args.busStopLat,
-          args.busStopLng,
-          latestLocation.lat,
-          latestLocation.lng
-        );
-        
-        // Return jeepney if it's currently within the radius
-        if (currentDistance <= radius) {
-          return {
-            ...jeep,
-            location: {
-              lat: latestLocation.lat,
-              lng: latestLocation.lng,
-            },
-            distanceFromBusStop: Math.round(currentDistance),
-          };
-        }
-        
-        return null;
-      })
-    );
+    const nearbyJeepneys = allJeepneys.map((jeep) => {
+      // Use lat/lng stored directly on the jeepney record (updated on every GPS ping)
+      if (jeep.lat == null || jeep.lng == null) return null;
+
+      const currentDistance = calculateDistance(
+        args.busStopLat,
+        args.busStopLng,
+        jeep.lat,
+        jeep.lng
+      );
+
+      if (currentDistance <= radius) {
+        return {
+          ...jeep,
+          location: { lat: jeep.lat, lng: jeep.lng },
+          distanceFromBusStop: Math.round(currentDistance),
+        };
+      }
+
+      return null;
+    });
     
     // Filter out null values and sort by distance
     return nearbyJeepneys
