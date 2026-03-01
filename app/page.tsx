@@ -126,17 +126,20 @@ export default function Home() {
     colorTheme: getColorTheme(jeep.passengerCount)
   })) || [];
 
-  // Get jeepney locations for map markers
-  const jeepLocations = jeepneysData?.filter((jeep: JeepneyData) => jeep.location !== null).map((jeep: JeepneyData) => ({
-    id: jeep.jeepneyId,
-    plateNumber: jeep.plateNumber,
-    passengerCount: jeep.passengerCount,
-    position: [jeep.location!.lat, jeep.location!.lng] as [number, number],
-    colorTheme: getColorTheme(jeep.passengerCount),
-    status: getStatus(jeep.passengerCount),
-    routeNumber: jeep.routeNumber,
-    color: jeep.color,
-  })) || [];
+  // Get jeepney locations for map markers — positions come directly from Convex lat/lng
+  const jeepLocations = jeepneysData?.filter((jeep: JeepneyData) => jeep.location !== null).map((jeep: JeepneyData) => {
+    console.log(`📍 [Convex→Marker] ${jeep.jeepneyId}: lat=${jeep.location!.lat}, lng=${jeep.location!.lng}, passengers=${jeep.passengerCount}`);
+    return {
+      id: jeep.jeepneyId,
+      plateNumber: jeep.plateNumber,
+      passengerCount: jeep.passengerCount,
+      position: [jeep.location!.lat, jeep.location!.lng] as [number, number],
+      colorTheme: getColorTheme(jeep.passengerCount),
+      status: getStatus(jeep.passengerCount),
+      routeNumber: jeep.routeNumber,
+      color: jeep.color,
+    };
+  }) || [];
 
   // Find routes passing through a bus stop (within 50 meters)
   const findRoutesPassingThroughBusStop = (busStopLat: number, busStopLng: number) => {
@@ -279,7 +282,7 @@ export default function Home() {
         <span className={connectionState?.isWebSocketConnected ? "text-green-600" : "text-red-600"}>
           {connectionState?.isWebSocketConnected ? "Connected to Convex" : "Disconnected"}
         </span>
-        {" "}· v2.0
+        {" "}· v2.1
       </div>
 
       {/* Carousel positioned on top of the map */}
