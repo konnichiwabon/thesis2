@@ -12,6 +12,7 @@ import type * as busStops from "../busStops.js";
 import type * as gps from "../gps.js";
 import type * as jeepneyManagement from "../jeepneyManagement.js";
 import type * as routes from "../routes.js";
+import type * as telemetry from "../telemetry.js";
 
 import type {
   ApiFromModules,
@@ -24,6 +25,7 @@ declare const fullApi: ApiFromModules<{
   gps: typeof gps;
   jeepneyManagement: typeof jeepneyManagement;
   routes: typeof routes;
+  telemetry: typeof telemetry;
 }>;
 
 /**

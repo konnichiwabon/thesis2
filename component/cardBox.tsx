@@ -9,9 +9,11 @@ interface CardBoxProps {
   currentLoad?: number;
   maxLoad?: number;
   onLoadChange?: (load: number) => void;
+  isFollowing?: boolean;
+  onFollowVehicle?: () => void;
 }
 
-export default function CardBox({ onClose, route = "62C", plateNumber = "ABC 123", currentLoad = 0, maxLoad = 40, onLoadChange }: CardBoxProps = {}) {
+export default function CardBox({ onClose, route = "62C", plateNumber = "ABC 123", currentLoad = 0, maxLoad = 40, onLoadChange, isFollowing = false, onFollowVehicle }: CardBoxProps = {}) {
   const loadPercentage = (currentLoad / maxLoad) * 100;
 
   const handleIncrement = () => {
@@ -116,9 +118,16 @@ export default function CardBox({ onClose, route = "62C", plateNumber = "ABC 123
         <div className="text-center"></div>
 
         <div className="flex gap-4 pt-2">
-          <div className="flex-1 bg-blue-600 h-14 rounded-lg shadow-md items-center justify-center flex font-bold">
-            Follow Vehicle
-          </div>
+          <button
+            onClick={onFollowVehicle}
+            className={`flex-1 h-14 rounded-lg shadow-md items-center justify-center flex font-bold transition-all cursor-pointer ${
+              isFollowing 
+                ? 'bg-green-600 hover:bg-green-700 text-white animate-pulse' 
+                : 'bg-blue-600 hover:bg-blue-700 text-white'
+            }`}
+          >
+            {isFollowing ? '📍 Following...' : '🚍 Follow Vehicle'}
+          </button>
           <button 
             onClick={onClose}
             className="flex-1 bg-white text-black h-14 rounded-lg shadow-inner items-center justify-center flex font-bold hover:bg-gray-100 cursor-pointer"

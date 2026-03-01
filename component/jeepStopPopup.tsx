@@ -1,4 +1,4 @@
-// component/busStopPopup.tsx
+// component/jeepStopPopup.tsx
 import React from 'react';
 
 interface Route {
@@ -19,8 +19,8 @@ interface Jeepney {
   };
 }
 
-interface BusStopPopupProps {
-  busStop: {
+interface JeepStopPopupProps {
+  jeepStop: {
     name: string;
     lat: number;
     lng: number;
@@ -29,15 +29,17 @@ interface BusStopPopupProps {
   jeepneys: Jeepney[];
   onClose: () => void;
   onJeepneyClick: (jeep: Jeepney) => void;
+  onShowRoute?: (routeName: string) => void;
 }
 
-export default function BusStopPopup({ 
-  busStop, 
+export default function JeepStopPopup({ 
+  jeepStop, 
   routes, 
   jeepneys, 
   onClose, 
-  onJeepneyClick 
-}: BusStopPopupProps) {
+  onJeepneyClick,
+  onShowRoute 
+}: JeepStopPopupProps) {
   
   const getColorTheme = (load: number): 'green' | 'red' | 'orange' | 'purple' => {
     if (load <= 13) return "green";
@@ -58,9 +60,9 @@ export default function BusStopPopup({
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex-1">
-          <h2 className="text-xl font-bold text-gray-900">{busStop.name}</h2>
+          <h2 className="text-xl font-bold text-gray-900">{jeepStop.name}</h2>
           <p className="text-xs text-gray-500 mt-1">
-            Bus Stop
+            Jeep Stop
           </p>
         </div>
         <button
@@ -82,18 +84,28 @@ export default function BusStopPopup({
           </h3>
           <div className="space-y-2">
             {routes.map((route) => (
-              <div key={route._id} className="flex items-center gap-3">
-                <span 
-                  className="px-3 py-1 rounded-lg text-white font-bold text-sm"
-                  style={{ backgroundColor: route.color }}
-                >
-                  {route.name}
-                </span>
-                <div className="flex gap-3 text-xs text-gray-600">
-                  <span>{(route.distance / 1000).toFixed(1)} km</span>
-                  <span>•</span>
-                  <span>{Math.round(route.duration / 60)} min</span>
+              <div key={route._id} className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span 
+                    className="px-3 py-1 rounded-lg text-white font-bold text-sm"
+                    style={{ backgroundColor: route.color }}
+                  >
+                    {route.name}
+                  </span>
+                  <div className="flex gap-3 text-xs text-gray-600">
+                    <span>{(route.distance / 1000).toFixed(1)} km</span>
+                    <span>•</span>
+                    <span>{Math.round(route.duration / 60)} min</span>
+                  </div>
                 </div>
+                {onShowRoute && (
+                  <button
+                    onClick={() => onShowRoute(route.name)}
+                    className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold rounded transition-colors"
+                  >
+                    See Route
+                  </button>
+                )}
               </div>
             ))}
           </div>

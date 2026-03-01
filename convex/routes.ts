@@ -130,3 +130,18 @@ export const getRouteByName = query({
     return route;
   },
 });
+
+/**
+ * Get routes by ID
+ */
+export const getRoutesByIds = query({
+  args: {
+    ids: v.array(v.id("routes")),
+  },
+  handler: async (ctx, args) => {
+    const routes = await Promise.all(
+      args.ids.map((id) => ctx.db.get(id))
+    );
+    return routes.filter((route) => route !== null);
+  },
+});

@@ -24,8 +24,6 @@ const AdminPage = () => {
   const addBusStop = useMutation(api.busStops.addBusStop);
   const busStops = useQuery(api.busStops.getAllBusStops);
   const deleteBusStop = useMutation(api.busStops.deleteBusStop);
-  const addSampleData = useMutation(api.gps.addSampleJeepneyData);
-  const clearAllJeepneys = useMutation(api.gps.clearAllJeepneys);
   
   // Jeepney management
   const addJeepney = useMutation(api.jeepneyManagement.addJeepney);
@@ -39,12 +37,10 @@ const AdminPage = () => {
   const [routeNumber, setRouteNumber] = useState("");
   const [jeepneyColor, setJeepneyColor] = useState("#10b981");
   const [operator, setOperator] = useState("");
+  const [maxLoad, setMaxLoad] = useState(40);
   const [editingJeepney, setEditingJeepney] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'jeepneys' | 'stopmanager' | 'routes'>('stopmanager');
   const [isDarkMode, setIsDarkMode] = useState(true);
-
-  const [isSampleLoading, setIsSampleLoading] = useState(false);
-  const [sampleMessage, setSampleMessage] = useState("");
 
   // Password check
   const ADMIN_PASSWORD = "admin123"; // Change this to your desired password
@@ -158,38 +154,6 @@ const AdminPage = () => {
     }
   };
 
-  const handleAddSampleData = async () => {
-    setIsSampleLoading(true);
-    setSampleMessage("");
-    try {
-      const result = await addSampleData();
-      setSampleMessage(`✅ ${result}`);
-      setTimeout(() => setSampleMessage(""), 5000);
-    } catch (error) {
-      console.error("Error adding sample data:", error);
-      setSampleMessage("❌ Failed to add sample data");
-    } finally {
-      setIsSampleLoading(false);
-    }
-  };
-
-  const handleClearAllJeepneys = async () => {
-    if (confirm("⚠️ Are you sure you want to delete ALL jeepneys and their location history?")) {
-      setIsSampleLoading(true);
-      setSampleMessage("");
-      try {
-        const result = await clearAllJeepneys();
-        setSampleMessage(`✅ ${result}`);
-        setTimeout(() => setSampleMessage(""), 5000);
-      } catch (error) {
-        console.error("Error clearing data:", error);
-        setSampleMessage("❌ Failed to clear data");
-      } finally {
-        setIsSampleLoading(false);
-      }
-    }
-  };
-
   const handleJeepneySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -206,6 +170,7 @@ const AdminPage = () => {
           routeNumber,
           color: jeepneyColor,
           operator,
+          maxLoad,
         });
         alert("Jeepney updated successfully!");
         setEditingJeepney(null);
@@ -216,6 +181,7 @@ const AdminPage = () => {
           routeNumber,
           color: jeepneyColor,
           operator,
+          maxLoad,
         });
         alert("Jeepney added successfully!");
       }
@@ -226,6 +192,7 @@ const AdminPage = () => {
       setRouteNumber("");
       setJeepneyColor("#10b981");
       setOperator("");
+      setMaxLoad(40);
     } catch (error: any) {
       console.error("Error saving jeepney:", error);
       alert(error.message || "Failed to save jeepney");
@@ -239,6 +206,7 @@ const AdminPage = () => {
     setRouteNumber(jeep.routeNumber || "");
     setJeepneyColor(jeep.color || "#10b981");
     setOperator(jeep.operator || "");
+    setMaxLoad(jeep.maxLoad ?? 40);
     setActiveTab('jeepneys');
   };
 
@@ -325,28 +293,6 @@ const AdminPage = () => {
           >
             🗺️ Routes
           </button>
-        </div>
-        
-        {/* Add Sample Jeepney Data */}
-        <div className="bg-gradient-to-r from-green-900 to-blue-900 rounded-lg shadow-lg p-4 sm:p-6 mb-6 sm:mb-8 border-2 border-green-700">
-          <h2 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 text-white">🚍 Test Jeepney Data</h2>
-          <p className="text-gray-300 mb-3 sm:mb-4 text-sm">
-            Add sample jeepney with location history that passes through your bus stops. This helps you test the 1km scanning feature.
-          </p>
-          <button
-            onClick={handleAddSampleData}
-            disabled={isSampleLoading}
-            className="w-full bg-green-600 text-white py-2.5 sm:py-3 px-4 rounded-md hover:bg-green-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed text-sm sm:text-base"
-          >
-            {isSampleLoading ? "Adding Sample Data..." : "➕ Add Sample Jeepney"}
-          </button>
-          {sampleMessage && (
-            <div className={`mt-3 sm:mt-4 p-3 rounded-md text-sm ${
-              sampleMessage.includes('✅') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-            }`}>
-              {sampleMessage}
-            </div>
-          )}
         </div>
         
         {/* Conditional Content Based on Active Tab */}
@@ -456,6 +402,30 @@ const AdminPage = () => {
                 </div>
 
                 <div>
+                  <label htmlFor="maxLoad" className={`block text-sm font-bold mb-1 ${
+                    isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
+                    Max Passenger Capacity
+                  </label>
+                  <input
+                    type="number"
+                    id="maxLoad"
+                    value={maxLoad}
+                    onChange={(e) => setMaxLoad(Math.max(1, parseInt(e.target.value) || 1))}
+                    min={1}
+                    className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      isDarkMode
+                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                    }`}
+                    placeholder="e.g., 40"
+                  />
+                  <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Default is 40. This controls the max load shown on the map and cards.
+                  </p>
+                </div>
+
+                <div>
                   <label htmlFor="jeepneyColor" className={`block text-sm font-bold mb-1 ${
                     isDarkMode ? 'text-gray-300' : 'text-gray-700'
                   }`}>
@@ -502,6 +472,7 @@ const AdminPage = () => {
                         setRouteNumber("");
                         setJeepneyColor("#10b981");
                         setOperator("");
+                        setMaxLoad(40);
                       }}
                       className={`px-4 py-2 rounded-md transition-colors font-medium ${
                         isDarkMode
@@ -557,7 +528,7 @@ const AdminPage = () => {
                             {jeep.routeNumber} - {jeep.plateNumber}
                           </h3>
                           <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                            ID: {jeep.jeepneyId} | Operator: {jeep.operator || "N/A"}
+                            ID: {jeep.jeepneyId} | Operator: {jeep.operator || "N/A"} | Capacity: {jeep.maxLoad ?? 40}
                           </p>
                         </div>
                       </div>

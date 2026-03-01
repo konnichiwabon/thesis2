@@ -8,6 +8,7 @@ interface JeepneyMarkerPopupProps {
     id: string;
     plateNumber: string;
     passengerCount: number;
+    maxLoad?: number;
     position: [number, number];
     colorTheme: 'green' | 'red' | 'orange' | 'purple';
     status: string;
@@ -83,7 +84,7 @@ export default function JeepneyMarkerPopup({
           route={jeep.id}
           plateNumber={jeep.plateNumber}
           currentLoad={jeep.passengerCount}
-          maxLoad={40}
+          maxLoad={jeep.maxLoad ?? 40}
           status={jeep.status}
           colorTheme={jeep.colorTheme}
           onClose={() => {}}

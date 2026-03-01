@@ -9,6 +9,7 @@ export const addJeepney = mutation({
     routeNumber: v.string(),
     color: v.string(),
     operator: v.string(),
+    maxLoad: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     // Check if jeepney already exists
@@ -27,6 +28,7 @@ export const addJeepney = mutation({
       routeNumber: args.routeNumber,
       color: args.color,
       operator: args.operator,
+      maxLoad: args.maxLoad ?? 40,
       passengerCount: 0,
       lastUpdated: Date.now(),
     });
@@ -43,6 +45,7 @@ export const updateJeepney = mutation({
     routeNumber: v.optional(v.string()),
     color: v.optional(v.string()),
     operator: v.optional(v.string()),
+    maxLoad: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;

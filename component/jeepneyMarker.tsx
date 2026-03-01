@@ -1,13 +1,15 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import PopupCard from './popupcard';
+import { useAnimatedPosition } from '@/lib/useAnimatedPosition';
 
 interface JeepneyMarkerProps {
   jeep: {
     id: string;
     plateNumber: string;
     passengerCount: number;
+    maxLoad?: number;
     position: [number, number];
     colorTheme: 'green' | 'red' | 'orange' | 'purple';
     status: string;
@@ -27,6 +29,21 @@ export default function JeepneyMarker({
 }: JeepneyMarkerProps) {
   const markerRef = useRef<any>(null);
   const isNearbyBusStop = nearbyJeepneys?.some(nj => nj.jeepneyId === jeep.id);
+
+  // Smooth road-following animation between GPS updates
+  const animatedPosition = useAnimatedPosition(jeep.position, jeep.id, {
+    duration: 3000,
+    osrmThreshold: 50,
+    useRoadSnapping: true,
+  });
+
+  // Directly update the Leaflet marker's lat/lng for buttery-smooth movement
+  // (avoids full React re-render on every animation frame)
+  useEffect(() => {
+    if (markerRef.current) {
+      markerRef.current.setLatLng(animatedPosition);
+    }
+  }, [animatedPosition]);
   
   // Get color based on load status
   const getStatusColor = () => {
@@ -129,7 +146,7 @@ export default function JeepneyMarker({
   return (
     <Marker 
       ref={markerRef}
-      position={jeep.position}
+      position={animatedPosition}
       icon={customIcon}
     >
       <Popup autoPan={true} keepInView={true}>
@@ -137,7 +154,7 @@ export default function JeepneyMarker({
           route={jeep.id}
           plateNumber={jeep.plateNumber}
           currentLoad={jeep.passengerCount}
-          maxLoad={40}
+          maxLoad={jeep.maxLoad ?? 40}
           status={jeep.status}
           colorTheme={jeep.colorTheme}
           onClose={() => {

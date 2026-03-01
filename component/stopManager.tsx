@@ -31,6 +31,10 @@ const Marker = dynamic(
   () => import("react-leaflet").then((mod) => mod.Marker),
   { ssr: false }
 );
+const CircleMarker = dynamic(
+  () => import("react-leaflet").then((mod) => mod.CircleMarker),
+  { ssr: false }
+);
 
 interface BusStop {
   _id: Id<"busStops">;
@@ -71,6 +75,7 @@ const StopManager = ({ isDarkMode }: { isDarkMode: boolean }) => {
   // Queries
   const busStops = useQuery(api.busStops.getAllBusStops);
   const routes = useQuery(api.routes.getAllRoutes);
+  const jeepneysData = useQuery(api.gps.getJeepneysWithLocations);
 
   // Mutations
   const addBusStop = useMutation(api.busStops.addBusStop);
@@ -462,6 +467,32 @@ const StopManager = ({ isDarkMode }: { isDarkMode: boolean }) => {
                           }}
                         />
                       )}
+                      
+                      {/* Display Jeepneys as circles */}
+                      {jeepneysData?.map((jeep: any) => {
+                        if (!jeep.location) return null;
+                        
+                        const getColorByLoad = (load: number) => {
+                          if (load <= 13) return '#10b981'; // green
+                          if (load <= 26) return '#f59e0b'; // orange
+                          if (load <= 40) return '#ef4444'; // red
+                          return '#8b5cf6'; // purple
+                        };
+                        
+                        return (
+                          <CircleMarker
+                            key={jeep.jeepneyId}
+                            center={[jeep.location.lat, jeep.location.lng]}
+                            radius={8}
+                            pathOptions={{
+                              fillColor: getColorByLoad(jeep.passengerCount),
+                              fillOpacity: 0.8,
+                              color: '#ffffff',
+                              weight: 2
+                            }}
+                          />
+                        );
+                      })}
                     </MapContainer>
                   </div>
                 )}

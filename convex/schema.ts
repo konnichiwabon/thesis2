@@ -8,6 +8,7 @@ export default defineSchema({
     routeNumber: v.optional(v.string()), // Display route number (e.g., "04C", "62D")
     color: v.optional(v.string()), // Custom color for the jeepney marker
     operator: v.optional(v.string()), // Operator/Company name
+    maxLoad: v.optional(v.number()),   // Max passenger capacity (default 40)
     passengerCount: v.number(),
     lastUpdated: v.number(),
   }).index("by_jeepneyId", ["jeepneyId"]),
