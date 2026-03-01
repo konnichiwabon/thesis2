@@ -279,6 +279,7 @@ export default function Home() {
         <span className={connectionState?.isWebSocketConnected ? "text-green-600" : "text-red-600"}>
           {connectionState?.isWebSocketConnected ? "Connected to Convex" : "Disconnected"}
         </span>
+        {" "}· v2.0
       </div>
 
       {/* Carousel positioned on top of the map */}
