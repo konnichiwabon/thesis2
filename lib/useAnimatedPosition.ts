@@ -81,6 +81,7 @@ function interpolateAlongPath(
 /**
  * Fetch road-snapped path from OSRM between two points.
  * Returns array of [lat, lng] coordinates following the road.
+ * Has a 3-second timeout to prevent hanging.
  */
 async function fetchRoadPath(
   from: [number, number],
@@ -90,7 +91,12 @@ async function fetchRoadPath(
     const coords = `${from[1]},${from[0]};${to[1]},${to[0]}`;
     const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
 
-    const response = await fetch(url);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
     if (!response.ok) return null;
 
     const data = await response.json();
@@ -209,15 +215,29 @@ export function useAnimatedPosition(
 
     // Try OSRM road snapping for distances > threshold
     if (useRoadSnapping && distance >= osrmThreshold) {
-      fetchRoadPath(prevPos, newPos).then((roadPath) => {
-        if (!isMountedRef.current) return;
-        if (roadPath && roadPath.length >= 2) {
-          startAnimation(roadPath);
-        } else {
-          // Fallback to linear interpolation
-          startAnimation([prevPos, newPos]);
+      // Set a safety fallback — if OSRM takes too long, snap to new position
+      const safetyTimeout = setTimeout(() => {
+        if (isMountedRef.current) {
+          setAnimatedPos(newPos);
         }
-      });
+      }, 4000);
+
+      fetchRoadPath(prevPos, newPos)
+        .then((roadPath) => {
+          clearTimeout(safetyTimeout);
+          if (!isMountedRef.current) return;
+          if (roadPath && roadPath.length >= 2) {
+            startAnimation(roadPath);
+          } else {
+            // Fallback to linear interpolation
+            startAnimation([prevPos, newPos]);
+          }
+        })
+        .catch(() => {
+          clearTimeout(safetyTimeout);
+          if (!isMountedRef.current) return;
+          startAnimation([prevPos, newPos]);
+        });
     } else {
       // Linear interpolation for short distances
       startAnimation([prevPos, newPos]);
