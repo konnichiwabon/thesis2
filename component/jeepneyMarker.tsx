@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import PopupCard from './popupcard';
-import { useAnimatedPosition } from '@/lib/useAnimatedPosition';
+import { useAnimateMarker } from '@/lib/useAnimatedPosition';
 
 interface JeepneyMarkerProps {
   jeep: {
@@ -10,7 +10,7 @@ interface JeepneyMarkerProps {
     plateNumber: string;
     passengerCount: number;
     maxLoad?: number;
-    position: [number, number];
+    position: [number, number]; // [lat, lng] — comes from Convex via page.tsx
     colorTheme: 'green' | 'red' | 'orange' | 'purple';
     status: string;
     routeNumber?: string;
@@ -30,17 +30,14 @@ export default function JeepneyMarker({
   const markerRef = useRef<any>(null);
   const isNearbyBusStop = nearbyJeepneys?.some(nj => nj.jeepneyId === jeep.id);
 
-  // Smoothly animate marker to the latest GPS position from Convex
-  const animatedPosition = useAnimatedPosition(jeep.position, jeep.id, {
-    duration: 2000, // 2-second smooth transition between GPS updates
-  });
-
-  // Directly update the Leaflet marker position whenever the animated position changes
+  // Log every time this component receives new props from Convex
   useEffect(() => {
-    if (markerRef.current) {
-      markerRef.current.setLatLng(animatedPosition);
-    }
-  }, [animatedPosition[0], animatedPosition[1]]);
+    console.log(`🚍 [JeepneyMarker] ${jeep.id} received position: [${jeep.position[0]}, ${jeep.position[1]}]`);
+  }, [jeep.position[0], jeep.position[1]]);
+
+  // Smoothly animate the Leaflet marker to the new GPS position
+  // This calls marker.setLatLng() directly — no React state involved
+  useAnimateMarker(markerRef, jeep.position, 2000);
   
   // Get color based on load status
   const getStatusColor = () => {
@@ -143,7 +140,7 @@ export default function JeepneyMarker({
   return (
     <Marker 
       ref={markerRef}
-      position={animatedPosition}
+      position={jeep.position}
       icon={customIcon}
     >
       <Popup autoPan={true} keepInView={true}>
