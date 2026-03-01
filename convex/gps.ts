@@ -32,8 +32,10 @@ export const saveLocation = mutation({
       // (plateNumber, routeNumber, operator, maxLoad, color are set via Admin Panel)
       await ctx.db.patch(currentJeepStatus._id, {
         passengerCount: newTotal,
-        lastUpdated: Date.now(),        lat: args.latitude,
-        lng: args.longitude,      });
+        lastUpdated: Date.now(),
+        lat: args.latitude,
+        lng: args.longitude,
+      });
     } else {
       // First time seeing this jeep — create with minimal data
       // Admin should register the jeep first via /admin for full details
