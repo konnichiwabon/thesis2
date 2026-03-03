@@ -1,39 +1,29 @@
 "use client";
 
-import { useState } from "react";
-
 interface CardBoxProps {
   onClose?: () => void;
   route?: string;
+  name?: string;
+  routeNumber?: string;
   plateNumber?: string;
+  operator?: string;
+  driverName?: string;
   currentLoad?: number;
   maxLoad?: number;
-  onLoadChange?: (load: number) => void;
   isFollowing?: boolean;
   onFollowVehicle?: () => void;
 }
 
-export default function CardBox({ onClose, route = "62C", plateNumber = "ABC 123", currentLoad = 0, maxLoad = 40, onLoadChange, isFollowing = false, onFollowVehicle }: CardBoxProps = {}) {
-  const loadPercentage = (currentLoad / maxLoad) * 100;
-
-  const handleIncrement = () => {
-    if (onLoadChange) {
-      onLoadChange(currentLoad + 1);
-    }
-  };
-
-  const handleDecrement = () => {
-    if (onLoadChange) {
-      onLoadChange(Math.max(0, currentLoad - 1));
-    }
-  };
+export default function CardBox({ onClose, route = "62C", name, routeNumber, plateNumber = "ABC 123", operator, driverName, currentLoad = 0, maxLoad = 0, isFollowing = false, onFollowVehicle }: CardBoxProps = {}) {
+  const loadPercentage = maxLoad > 0 ? (currentLoad / maxLoad) * 100 : 0;
 
   const status = () => {
-    if (currentLoad <= 13)
+    const pct = maxLoad > 0 ? (currentLoad / maxLoad) * 100 : 0;
+    if (pct <= 33)
       return { text: "Low", color: "text-green-600", barColor: "bg-green-500" };
-    else if (currentLoad <= 26) {
-      return { text: "Moderate", color: "text-yellow-600", barColor: "bg-yellow-500" };
-    } else if (currentLoad <= 40) {
+    else if (pct <= 66) {
+      return { text: "Moderate", color: "text-orange-600", barColor: "bg-orange-500" };
+    } else if (pct < 100) {
       return { text: "High", color: "text-red-600", barColor: "bg-red-500" };
     } else {
       return { text: "Overloaded", color: "text-purple-600", barColor: "bg-purple-500" };
@@ -41,7 +31,7 @@ export default function CardBox({ onClose, route = "62C", plateNumber = "ABC 123
   };
 
   return (
-    <div className="relative w-full max-w-md mt-4 bg-white backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden p-4">
+    <div className="relative w-80 mt-4 bg-white backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden p-4">
       <button
         onClick={onClose}
         className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors"
@@ -50,25 +40,13 @@ export default function CardBox({ onClose, route = "62C", plateNumber = "ABC 123
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>
-      <button
-        onClick={handleIncrement}
-        className="text-black"
-      >
-        Click me{" "}
-      </button>
-      <button
-        onClick={handleDecrement}
-        className="text-black"
-      >
-        Negative{" "}
-      </button>
       <div className="bg-blue-700 p-4 flex items-center gap-3 rounded-md ">
-        <div className="flex bg-red-600 h-12 w-16 rounded-md shadow-sm items-center justify-center font-bold">
-          {route}
+        <div className="flex bg-red-600 h-12 w-16 rounded-md shadow-sm items-center justify-center font-bold text-white">
+          {routeNumber || route}
         </div>
         <div className="flex-1 space-y-2">
-          <div className="flex h-5 rounded font-bold items-center justify-center">
-            PITOS TALAMABAN CARBON Via Echavez
+          <div className="flex h-5 rounded font-bold items-center justify-center text-white">
+            {name || route}
           </div>
         </div>
       </div>
@@ -104,12 +82,21 @@ export default function CardBox({ onClose, route = "62C", plateNumber = "ABC 123
           </p>
 
           <div className="h-0.5 w-[90%] bg-gray-200 ml-0 rounded mt-3 "> </div>
-          <div className="pt-6 items-center justify-center flex flex-col gap-">
-            <div className="text-black font-bold">Vehicle Plate </div>
-            <div className="text-black">{plateNumber}</div>
-            <div className="text-black ">(PITAMCO) </div>
-            <div className="text-black">Vehicle Plate </div>
-            <div className="text-black">Vehicle Plate </div>
+          <div className="pt-4 w-full flex flex-col gap-3">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-500 text-sm">Vehicle Plate</span>
+              <span className="text-black font-semibold">{plateNumber}</span>
+            </div>
+            {operator && (
+              <div className="flex justify-between items-center">
+                <span className="text-gray-500 text-sm">Operator</span>
+                <span className="text-black font-semibold">{operator}</span>
+              </div>
+            )}
+            <div className="flex justify-between items-center">
+              <span className="text-gray-500 text-sm">Driver</span>
+              <span className="text-black font-semibold">{driverName || "—"}</span>
+            </div>
           </div>
 
           {/* Vehicle Plate */}

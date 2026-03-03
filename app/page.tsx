@@ -4,7 +4,7 @@ import Carousel from "@/component/carousel";
 import BusStopCarousel from "@/component/busStopCarousel";
 import dynamic from 'next/dynamic';
 import { useState, useEffect } from 'react';
-import { useConvexConnectionState, useQuery, useMutation } from "convex/react";
+import { useConvexConnectionState, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { getLoadStatus } from "@/types/jeepney";
 import type { JeepneyMapMarker, JeepneyCarouselItem } from "@/types/jeepney";
@@ -12,10 +12,14 @@ import type { JeepneyMapMarker, JeepneyCarouselItem } from "@/types/jeepney";
 // Interface for jeepney data from Convex
 interface JeepneyData {
   jeepneyId: string;
+  name?: string;
   plateNumber: string;
   passengerCount: number;
+  maxLoad?: number;
   routeNumber?: string;
   color?: string;
+  operator?: string;
+  driverName?: string;
   location: {
     lat: number;
     lng: number;
@@ -33,7 +37,6 @@ export default function Home() {
   const [showCarousel, setShowCarousel] = useState(true);
   const [selectedJeep, setSelectedJeep] = useState<any>(null);
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
-  const [isUpdating, setIsUpdating] = useState(false);
   const [mapType, setMapType] = useState<'roadmap' | 'satellite' | 'hybrid' | 'terrain'>('roadmap');
   const [selectedBusStop, setSelectedBusStop] = useState<any>(null);
   const [routesPassingThrough, setRoutesPassingThrough] = useState<any[]>([]);
@@ -60,9 +63,6 @@ export default function Home() {
     } : "skip"
   );
   
-  // Mutation to save location updates
-  const saveLocation = useMutation(api.gps.saveLocation);
-  
   // Update nearby jeepneys when query results change
   useEffect(() => {
     if (nearbyJeepneysData) {
@@ -74,43 +74,49 @@ export default function Home() {
     }
   }, [nearbyJeepneysData]);
   
-  // Keep selectedJeep in sync with Convex data (but not during manual updates)
+  // Keep selectedJeep in sync with Convex live data
   useEffect(() => {
-    if (selectedJeep && jeepneysData && !isUpdating) {
+    if (selectedJeep && jeepneysData) {
       const updatedJeep = jeepneysData.find((j: JeepneyData) => j.jeepneyId === selectedJeep.jeepneyId);
-      if (updatedJeep && updatedJeep.passengerCount !== selectedJeep.passengerCount) {
+      if (updatedJeep) {
         setSelectedJeep(updatedJeep);
       }
     }
-  }, [jeepneysData, isUpdating]);
+  }, [jeepneysData]);
   
-  const getColorTheme = (load: number): 'green' | 'red' | 'orange' | 'purple' => {
-    if (load <= 13) return "green";
-    if (load <= 26) return "orange";
-    if (load <= 40) return "red";
+  const getColorTheme = (load: number, maxLoad: number = 40): 'green' | 'red' | 'orange' | 'purple' => {
+    const pct = maxLoad > 0 ? (load / maxLoad) * 100 : 0;
+    if (pct <= 33) return "green";
+    if (pct <= 66) return "orange";
+    if (pct < 100) return "red";
     return "purple";
   };
 
-  const getStatus = (load: number): string => {
-    if (load <= 13) return "Low";
-    if (load <= 26) return "Moderate";
-    if (load <= 40) return "High";
+  const getStatus = (load: number, maxLoad: number = 40): string => {
+    const pct = maxLoad > 0 ? (load / maxLoad) * 100 : 0;
+    if (pct <= 33) return "Low";
+    if (pct <= 66) return "Moderate";
+    if (pct < 100) return "High";
     return "Overloaded";
   };
   
   // Bus data that will be shared between popup and CardBox
   const busData = selectedJeep ? {
     route: selectedJeep.jeepneyId,
+    name: selectedJeep.name,
+    routeNumber: selectedJeep.routeNumber,
     plateNumber: selectedJeep.plateNumber,
+    operator: selectedJeep.operator,
+    driverName: selectedJeep.driverName,
     currentLoad: selectedJeep.passengerCount,
-    maxLoad: 40,
-    status: getStatus(selectedJeep.passengerCount),
-    colorTheme: getColorTheme(selectedJeep.passengerCount)
+    maxLoad: selectedJeep.maxLoad ?? 0,
+    status: getStatus(selectedJeep.passengerCount, selectedJeep.maxLoad ?? 0),
+    colorTheme: getColorTheme(selectedJeep.passengerCount, selectedJeep.maxLoad ?? 0)
   } : {
     route: "62C",
     plateNumber: "ABC 123",
     currentLoad: 0,
-    maxLoad: 40,
+    maxLoad: 0,
     status: "Low",
     colorTheme: "green" as const
   };
@@ -121,25 +127,10 @@ export default function Home() {
     route: jeep.jeepneyId,
     plateNumber: jeep.plateNumber,
     currentLoad: jeep.passengerCount,
-    maxLoad: 40,
-    status: getStatus(jeep.passengerCount),
-    colorTheme: getColorTheme(jeep.passengerCount)
+    maxLoad: jeep.maxLoad ?? 0,
+    status: getStatus(jeep.passengerCount, jeep.maxLoad ?? 0),
+    colorTheme: getColorTheme(jeep.passengerCount, jeep.maxLoad ?? 0)
   })) || [];
-
-  // Get jeepney locations for map markers — positions come directly from Convex lat/lng
-  const jeepLocations = jeepneysData?.filter((jeep: JeepneyData) => jeep.location !== null).map((jeep: JeepneyData) => {
-    console.log(`📍 [Convex→Marker] ${jeep.jeepneyId}: lat=${jeep.location!.lat}, lng=${jeep.location!.lng}, passengers=${jeep.passengerCount}`);
-    return {
-      id: jeep.jeepneyId,
-      plateNumber: jeep.plateNumber,
-      passengerCount: jeep.passengerCount,
-      position: [jeep.location!.lat, jeep.location!.lng] as [number, number],
-      colorTheme: getColorTheme(jeep.passengerCount),
-      status: getStatus(jeep.passengerCount),
-      routeNumber: jeep.routeNumber,
-      color: jeep.color,
-    };
-  }) || [];
 
   // Find routes passing through a bus stop (within 50 meters)
   const findRoutesPassingThroughBusStop = (busStopLat: number, busStopLng: number) => {
@@ -182,11 +173,12 @@ export default function Home() {
   return (
     <div>
       <MapComponent 
-        jeepLocations={jeepLocations}
         busStops={busStopsData || []}
         selectedLocation={mapCenter}
         onViewMoreDetails={(jeep) => {
-          setSelectedJeep(jeep);
+          // Enrich the marker object with full DB data
+          const fullJeep = jeepneysData?.find((j: JeepneyData) => j.jeepneyId === jeep.id) ?? jeep;
+          setSelectedJeep(fullJeep);
           setShowCardBox(true);
           setShowCarousel(false);
         }}
@@ -347,37 +339,13 @@ export default function Home() {
                 setMapCenter(null);
               }} 
               route={busData.route}
+              name={(busData as any).name}
+              routeNumber={busData.routeNumber}
               plateNumber={busData.plateNumber}
+              operator={busData.operator}
+              driverName={busData.driverName}
               currentLoad={busData.currentLoad}
               maxLoad={busData.maxLoad}
-              onLoadChange={async (newLoad) => {
-                // Optimistically update UI immediately
-                setSelectedJeep({...selectedJeep, passengerCount: newLoad});
-                setIsUpdating(true);
-                
-                // Calculate passengers in/out
-                const diff = newLoad - busData.currentLoad;
-                const passengersIn = diff > 0 ? diff : 0;
-                const passengersOut = diff < 0 ? Math.abs(diff) : 0;
-                
-                // Update Convex database
-                if (selectedJeep && selectedJeep.location) {
-                  try {
-                    await saveLocation({
-                      jeepneyId: selectedJeep.jeepneyId,
-                      plateNumber: selectedJeep.plateNumber,
-                      latitude: selectedJeep.location.lat,
-                      longitude: selectedJeep.location.lng,
-                      passengersIn: passengersIn,
-                      passengersOut: passengersOut,
-                    });
-                  } catch (error) {
-                    console.error("Failed to update passenger count:", error);
-                  } finally {
-                    setIsUpdating(false);
-                  }
-                }
-              }}
             />
           </div>
         </div>

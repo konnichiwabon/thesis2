@@ -1,8 +1,7 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import PopupCard from './popupcard';
-import { useAnimateMarker } from '@/lib/useAnimatedPosition';
 
 interface JeepneyMarkerProps {
   jeep: {
@@ -35,10 +34,6 @@ export default function JeepneyMarker({
     console.log(`🚍 [JeepneyMarker] ${jeep.id} received position: [${jeep.position[0]}, ${jeep.position[1]}]`);
   }, [jeep.position[0], jeep.position[1]]);
 
-  // Smoothly animate the Leaflet marker to the new GPS position
-  // This calls marker.setLatLng() directly — no React state involved
-  useAnimateMarker(markerRef, jeep.position, 2000);
-  
   // Get color based on load status
   const getStatusColor = () => {
     switch(jeep.colorTheme) {
@@ -56,7 +51,10 @@ export default function JeepneyMarker({
   // Use custom route number if provided, otherwise extract from ID
   const displayRouteNumber = jeep.routeNumber || jeep.id.replace(/[^0-9]/g, '') || jeep.id.slice(-2);
   
-  const customIcon = new L.DivIcon({
+  // Memoize the icon so it is only recreated when appearance-related props change,
+  // not on every render (e.g. passenger count updates). Recreating the icon causes
+  // react-leaflet to call marker.setIcon() which rebuilds the DOM and closes popups.
+  const customIcon = useMemo(() => new L.DivIcon({
     className: 'custom-jeepney-marker',
     html: `
       <div style="
@@ -135,7 +133,7 @@ export default function JeepneyMarker({
     `,
     iconSize: [50, 70],
     iconAnchor: [25, 70],
-  });
+  }), [jeep.id, jeep.position[0], jeep.position[1], markerColor, isNearbyBusStop, displayRouteNumber, showRouteNumber]);
   
   return (
     <Marker 

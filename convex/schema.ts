@@ -4,19 +4,20 @@ import { v } from "convex/values";
 export default defineSchema({
   jeepneys: defineTable({
     jeepneyId: v.string(),       // Internal ID (e.g., "Jeep-01")
+    name: v.optional(v.string()),        // Display name (e.g., "Unit 1", "Dela Cruz")
     plateNumber: v.string(),     // Legal Plate (e.g., "GWH-123")
     routeNumber: v.optional(v.string()), // Display route number (e.g., "04C", "62D")
     color: v.optional(v.string()), // Custom color for the jeepney marker
     operator: v.optional(v.string()), // Operator/Company name
+    driverName: v.optional(v.string()), // Driver's full name
     maxLoad: v.optional(v.number()),   // Max passenger capacity (default 40)
     passengerCount: v.number(),
     lastUpdated: v.number(),
-    lat: v.optional(v.number()),  // Latest GPS latitude
-    lng: v.optional(v.number()),  // Latest GPS longitude
+    lat: v.optional(v.number()),  // Latest GPS latitude (editable in dashboard)
+    lng: v.optional(v.number()),  // Latest GPS longitude (editable in dashboard)
   }).index("by_jeepneyId", ["jeepneyId"]),
 
   locations: defineTable({
-    // ... (rest of your location fields stay the same)
     jeepneyId: v.string(),
     lat: v.number(),
     lng: v.number(),
@@ -24,7 +25,8 @@ export default defineSchema({
     passengersOut: v.number(),
     totalPassengers: v.number(),
     timestamp: v.number(),
-  }).index("by_jeepneyId", ["jeepneyId"]),
+  }).index("by_jeepneyId", ["jeepneyId"])
+    .index("by_jeepneyId_timestamp", ["jeepneyId", "timestamp"]),
 
   busStops: defineTable({
     name: v.string(),

@@ -5,14 +5,15 @@ import { v } from "convex/values";
 export const addJeepney = mutation({
   args: {
     jeepneyId: v.string(),
+    name: v.optional(v.string()),
     plateNumber: v.string(),
     routeNumber: v.string(),
     color: v.string(),
     operator: v.string(),
+    driverName: v.optional(v.string()),
     maxLoad: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    // Check if jeepney already exists
     const existing = await ctx.db
       .query("jeepneys")
       .filter((q) => q.eq(q.field("jeepneyId"), args.jeepneyId))
@@ -24,10 +25,12 @@ export const addJeepney = mutation({
 
     const jeepneyId = await ctx.db.insert("jeepneys", {
       jeepneyId: args.jeepneyId,
+      name: args.name,
       plateNumber: args.plateNumber,
       routeNumber: args.routeNumber,
       color: args.color,
       operator: args.operator,
+      driverName: args.driverName,
       maxLoad: args.maxLoad ?? 40,
       passengerCount: 0,
       lastUpdated: Date.now(),
@@ -41,10 +44,12 @@ export const addJeepney = mutation({
 export const updateJeepney = mutation({
   args: {
     id: v.id("jeepneys"),
+    name: v.optional(v.string()),
     plateNumber: v.optional(v.string()),
     routeNumber: v.optional(v.string()),
     color: v.optional(v.string()),
     operator: v.optional(v.string()),
+    driverName: v.optional(v.string()),
     maxLoad: v.optional(v.number()),
   },
   handler: async (ctx, args) => {

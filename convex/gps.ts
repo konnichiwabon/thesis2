@@ -28,8 +28,7 @@ export const saveLocation = mutation({
     if (newTotal > maxLoad) newTotal = maxLoad;
 
     if (currentJeepStatus) {
-      // Only update GPS-related fields — never overwrite admin-managed fields
-      // (plateNumber, routeNumber, operator, maxLoad, color are set via Admin Panel)
+      // Update passenger count, timestamp, and latest GPS position
       await ctx.db.patch(currentJeepStatus._id, {
         passengerCount: newTotal,
         lastUpdated: Date.now(),
@@ -38,7 +37,6 @@ export const saveLocation = mutation({
       });
     } else {
       // First time seeing this jeep — create with minimal data
-      // Admin should register the jeep first via /admin for full details
       await ctx.db.insert("jeepneys", {
         jeepneyId: args.jeepneyId,
         plateNumber: args.plateNumber ?? "UNREGISTERED",

@@ -84,7 +84,7 @@ export default function JeepneyMarkerPopup({
           route={jeep.id}
           plateNumber={jeep.plateNumber}
           currentLoad={jeep.passengerCount}
-          maxLoad={jeep.maxLoad ?? 40}
+          maxLoad={jeep.maxLoad ?? 0}
           status={jeep.status}
           colorTheme={jeep.colorTheme}
           onClose={() => {}}

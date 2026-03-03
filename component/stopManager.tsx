@@ -473,9 +473,10 @@ const StopManager = ({ isDarkMode }: { isDarkMode: boolean }) => {
                         if (!jeep.location) return null;
                         
                         const getColorByLoad = (load: number) => {
-                          if (load <= 13) return '#10b981'; // green
-                          if (load <= 26) return '#f59e0b'; // orange
-                          if (load <= 40) return '#ef4444'; // red
+                          const pct = jeep.maxLoad > 0 ? (load / jeep.maxLoad) * 100 : 0;
+                          if (pct <= 33) return '#10b981'; // green
+                          if (pct <= 66) return '#f59e0b'; // orange
+                          if (pct < 100) return '#ef4444'; // red
                           return '#8b5cf6'; // purple
                         };
                         

@@ -28,7 +28,7 @@ export default function PopupCard({
   const theme = {
     green: { bg: 'bg-green-600', text: 'text-green-600', bar: 'bg-green-600' },
     red: { bg: 'bg-red-600', text: 'text-red-600', bar: 'bg-red-600' },
-    orange: { bg: 'bg-yellow-600', text: 'text-yellow-600', bar: 'bg-yellow-600' },
+    orange: { bg: 'bg-orange-600', text: 'text-orange-600', bar: 'bg-orange-600' },
     purple: { bg: 'bg-purple-600', text: 'text-purple-600', bar: 'bg-purple-600' },
   }[colorTheme];
 

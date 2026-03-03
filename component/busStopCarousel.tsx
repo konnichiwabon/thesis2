@@ -39,17 +39,19 @@ export default function BusStopCarousel({
     }
   };
 
-  const getColorTheme = (load: number): 'green' | 'red' | 'orange' | 'purple' => {
-    if (load <= 13) return "green";
-    if (load <= 26) return "orange";
-    if (load <= 40) return "red";
+  const getColorTheme = (load: number, maxLoad: number = 40): 'green' | 'red' | 'orange' | 'purple' => {
+    const pct = maxLoad > 0 ? (load / maxLoad) * 100 : 0;
+    if (pct <= 33) return "green";
+    if (pct <= 66) return "orange";
+    if (pct < 100) return "red";
     return "purple";
   };
 
-  const getStatus = (load: number): string => {
-    if (load <= 13) return "Low";
-    if (load <= 26) return "Moderate";
-    if (load <= 40) return "High";
+  const getStatus = (load: number, maxLoad: number = 40): string => {
+    const pct = maxLoad > 0 ? (load / maxLoad) * 100 : 0;
+    if (pct <= 33) return "Low";
+    if (pct <= 66) return "Moderate";
+    if (pct < 100) return "High";
     return "Overloaded";
   };
 
@@ -61,7 +63,7 @@ export default function BusStopCarousel({
 
   const colorClasses = {
     green: { bg: 'bg-green-600', text: 'text-green-600', bar: 'bg-green-500' },
-    orange: { bg: 'bg-yellow-600', text: 'text-yellow-600', bar: 'bg-yellow-500' },
+    orange: { bg: 'bg-orange-600', text: 'text-orange-600', bar: 'bg-orange-500' },
     red: { bg: 'bg-red-600', text: 'text-red-600', bar: 'bg-red-500' },
     purple: { bg: 'bg-purple-600', text: 'text-purple-600', bar: 'bg-purple-500' }
   };
@@ -90,9 +92,11 @@ export default function BusStopCarousel({
           }}
         >
             {jeepneys.map((jeep) => {
-              const colorTheme = getColorTheme(jeep.passengerCount);
-              const status = getStatus(jeep.passengerCount);
-              const loadPercentage = Math.min((jeep.passengerCount / 40) * 100, 100);
+              const colorTheme = getColorTheme(jeep.passengerCount, jeep.maxLoad);
+              const status = getStatus(jeep.passengerCount, jeep.maxLoad);
+              const loadPercentage = jeep.maxLoad && jeep.maxLoad > 0
+                ? Math.min((jeep.passengerCount / jeep.maxLoad) * 100, 100)
+                : 0;
               const theme = colorClasses[colorTheme];
 
               return (

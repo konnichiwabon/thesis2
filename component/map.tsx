@@ -4,17 +4,27 @@ import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, useMap, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L, { DivIcon } from 'leaflet';
+import { useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import BusStopPopup from './jeepStopPopup';
 import JeepneyMarker from './jeepneyMarker';
 import JeepneyMarkerPopup from './jeepneyMarkerPopup';
 
-interface JeepLocation {
-  id: string;
-  plateNumber: string;
-  passengerCount: number;
-  position: [number, number];
-  colorTheme: 'green' | 'red' | 'orange' | 'purple';
-  status: string;
+// Helpers to compute color theme and status from passenger count
+function getColorTheme(load: number, maxLoad: number = 40): 'green' | 'red' | 'orange' | 'purple' {
+  const pct = maxLoad > 0 ? (load / maxLoad) * 100 : 0;
+  if (pct <= 33) return 'green';
+  if (pct <= 66) return 'orange';
+  if (pct < 100) return 'red';
+  return 'purple';
+}
+
+function getStatus(load: number, maxLoad: number = 40): string {
+  const pct = maxLoad > 0 ? (load / maxLoad) * 100 : 0;
+  if (pct <= 33) return 'Low';
+  if (pct <= 66) return 'Moderate';
+  if (pct < 100) return 'High';
+  return 'Overloaded';
 }
 
 interface BusStop {
@@ -26,7 +36,6 @@ interface BusStop {
 }
 
 interface MapComponentProps {
-  jeepLocations: JeepLocation[];
   busStops?: BusStop[];
   selectedLocation?: [number, number] | null;
   onViewMoreDetails: (jeep: any) => void;
@@ -42,8 +51,8 @@ interface MapComponentProps {
 function MapController({ selectedLocation }: { selectedLocation?: [number, number] | null }) {
   const map = useMap();
   useEffect(() => {
-    if (selectedLocation) {
-      map.flyTo(selectedLocation, 17, { duration: 1.5 });
+    if (map && selectedLocation) {
+      map.flyTo([selectedLocation[0], selectedLocation[1]], 17, { duration: 1.5 });
     }
   }, [selectedLocation, map]);
   return null;
@@ -136,7 +145,6 @@ function BusStopsLayer({ busStops, onBusStopClick, selectedBusStop, routesPassin
 }
 
 const MapComponent: React.FC<MapComponentProps> = ({ 
-  jeepLocations, 
   busStops = [], 
   selectedLocation, 
   onViewMoreDetails, 
@@ -149,7 +157,29 @@ const MapComponent: React.FC<MapComponentProps> = ({
   onCloseBusStop
 }) => {
   const googleMapsKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || '';
-  
+
+  // Directly query Convex for real-time jeepney GPS data
+  const jeepneysData = useQuery(api.gps.getJeepneysWithLocations);
+
+  // Build marker positions from live Convex data
+  const jeepLocations = jeepneysData
+    ?.filter((jeep) => jeep.location != null)
+    .map((jeep) => ({
+      id: jeep.jeepneyId,
+      name: jeep.name,
+      plateNumber: jeep.plateNumber,
+      passengerCount: jeep.passengerCount,
+      maxLoad: jeep.maxLoad,
+      position: [jeep.location!.lat, jeep.location!.lng] as [number, number],
+      location: jeep.location,
+      colorTheme: getColorTheme(jeep.passengerCount, jeep.maxLoad),
+      status: getStatus(jeep.passengerCount, jeep.maxLoad),
+      routeNumber: jeep.routeNumber,
+      color: jeep.color,
+      operator: jeep.operator,
+      driverName: jeep.driverName,
+    })) ?? [];
+
   useEffect(() => {
     // Fix for default markers
     const DefaultIcon = L.icon({

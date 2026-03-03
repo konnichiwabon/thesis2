@@ -33,10 +33,12 @@ const AdminPage = () => {
   
   // Jeepney form states
   const [jeepneyId, setJeepneyId] = useState("");
+  const [vehicleName, setVehicleName] = useState("");
   const [plateNumber, setPlateNumber] = useState("");
   const [routeNumber, setRouteNumber] = useState("");
   const [jeepneyColor, setJeepneyColor] = useState("#10b981");
   const [operator, setOperator] = useState("");
+  const [driverName, setDriverName] = useState("");
   const [maxLoad, setMaxLoad] = useState(40);
   const [editingJeepney, setEditingJeepney] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'jeepneys' | 'stopmanager' | 'routes'>('stopmanager');
@@ -166,10 +168,12 @@ const AdminPage = () => {
       if (editingJeepney) {
         await updateJeepney({
           id: editingJeepney._id,
+          name: vehicleName,
           plateNumber,
           routeNumber,
           color: jeepneyColor,
           operator,
+          driverName,
           maxLoad,
         });
         alert("Jeepney updated successfully!");
@@ -177,10 +181,12 @@ const AdminPage = () => {
       } else {
         await addJeepney({
           jeepneyId,
+          name: vehicleName,
           plateNumber,
           routeNumber,
           color: jeepneyColor,
           operator,
+          driverName,
           maxLoad,
         });
         alert("Jeepney added successfully!");
@@ -188,10 +194,12 @@ const AdminPage = () => {
       
       // Reset form
       setJeepneyId("");
+      setVehicleName("");
       setPlateNumber("");
       setRouteNumber("");
       setJeepneyColor("#10b981");
       setOperator("");
+      setDriverName("");
       setMaxLoad(40);
     } catch (error: any) {
       console.error("Error saving jeepney:", error);
@@ -202,10 +210,12 @@ const AdminPage = () => {
   const handleEditJeepney = (jeep: any) => {
     setEditingJeepney(jeep);
     setJeepneyId(jeep.jeepneyId);
+    setVehicleName(jeep.name || "");
     setPlateNumber(jeep.plateNumber);
     setRouteNumber(jeep.routeNumber || "");
     setJeepneyColor(jeep.color || "#10b981");
     setOperator(jeep.operator || "");
+    setDriverName(jeep.driverName || "");
     setMaxLoad(jeep.maxLoad ?? 40);
     setActiveTab('jeepneys');
   };
@@ -339,6 +349,26 @@ const AdminPage = () => {
                   />
                 </div>
 
+                <div>
+                  <label htmlFor="vehicleName" className={`block text-sm font-bold mb-1 ${
+                    isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
+                    Display Name
+                  </label>
+                  <input
+                    type="text"
+                    id="vehicleName"
+                    value={vehicleName}
+                    onChange={(e) => setVehicleName(e.target.value)}
+                    className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      isDarkMode
+                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                    }`}
+                    placeholder="e.g., Unit 1, Dela Cruz"
+                  />
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="plateNumber" className={`block text-sm font-bold mb-1 ${
@@ -398,6 +428,26 @@ const AdminPage = () => {
                         : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
                     }`}
                     placeholder="e.g., ABC Transport Cooperative"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="driverName" className={`block text-sm font-bold mb-1 ${
+                    isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
+                    Driver Name
+                  </label>
+                  <input
+                    type="text"
+                    id="driverName"
+                    value={driverName}
+                    onChange={(e) => setDriverName(e.target.value)}
+                    className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      isDarkMode
+                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                    }`}
+                    placeholder="e.g., Juan dela Cruz"
                   />
                 </div>
 
