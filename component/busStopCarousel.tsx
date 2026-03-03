@@ -7,6 +7,7 @@ interface Jeepney {
   jeepneyId: string;
   plateNumber: string;
   passengerCount: number;
+  maxLoad?: number;
   location?: {
     lat: number;
     lng: number;
