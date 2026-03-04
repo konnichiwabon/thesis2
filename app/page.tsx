@@ -295,16 +295,20 @@ export default function Home() {
         </div>
       )}
 
-      {/* Bus Stop Carousel - Shows when a bus stop is selected */}
-      {selectedBusStop && nearbyJeepneys && nearbyJeepneys.length > 0 && (
+      {/* Bus Stop Carousel - always visible when a bus stop is selected */}
+      {selectedBusStop && (
         <BusStopCarousel
           busStopName={selectedBusStop.name}
+          isLoading={nearbyJeepneysData === undefined && busStopCoords !== null}
           jeepneys={nearbyJeepneys.map((jeep: any) => ({
             jeepneyId: jeep.jeepneyId,
             plateNumber: jeep.plateNumber,
             passengerCount: jeep.passengerCount,
+            maxLoad: jeep.maxLoad,
             location: jeep.location,
-            distance: jeep.distanceFromBusStop
+            distance: jeep.distanceFromBusStop,
+            color: jeep.color,
+            routeNumber: jeep.routeNumber,
           }))}
           onClose={() => {
             setSelectedBusStop(null);
@@ -327,6 +331,7 @@ export default function Home() {
           }}
         />
       )}
+
       
       {showCardBox && selectedJeep && (
         <div className="absolute top-0 left-0 p-4 z-30 h-full pointer-events-none">

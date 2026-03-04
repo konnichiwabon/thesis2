@@ -1,18 +1,22 @@
 "use client"
 
 import React, { useRef } from 'react';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import ETABadge from './etaBadge';
+import { getJeepneyColor } from '@/lib/jeepneyColors';
 
 interface Jeepney {
   jeepneyId: string;
   plateNumber: string;
   passengerCount: number;
   maxLoad?: number;
+  color?: string;
+  routeNumber?: string;
   location?: {
     lat: number;
     lng: number;
   };
-  distance?: number; // distance in meters
+  distance?: number;
 }
 
 interface BusStopCarouselProps {
@@ -20,135 +24,165 @@ interface BusStopCarouselProps {
   jeepneys: Jeepney[];
   onClose: () => void;
   onJeepneyClick: (jeep: Jeepney) => void;
+  isLoading?: boolean;
 }
 
-export default function BusStopCarousel({ 
-  busStopName, 
-  jeepneys, 
-  onClose, 
-  onJeepneyClick 
+export default function BusStopCarousel({
+  busStopName,
+  jeepneys,
+  onClose,
+  onJeepneyClick,
+  isLoading = false,
 }: BusStopCarouselProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollContainerRef.current) {
-      const cardWidth = 200; // approximate width of each card
       scrollContainerRef.current.scrollBy({
-        left: direction === 'left' ? -cardWidth : cardWidth,
-        behavior: 'smooth'
+        left: direction === 'left' ? -192 : 192,
+        behavior: 'smooth',
       });
     }
   };
 
-  const getColorTheme = (load: number, maxLoad: number = 40): 'green' | 'red' | 'orange' | 'purple' => {
+  const getLoadTheme = (load: number, maxLoad: number = 40) => {
     const pct = maxLoad > 0 ? (load / maxLoad) * 100 : 0;
-    if (pct <= 33) return "green";
-    if (pct <= 66) return "orange";
-    if (pct < 100) return "red";
-    return "purple";
+    if (pct <= 33) return { bar: 'bg-emerald-400', label: 'Low', pill: 'bg-emerald-100 text-emerald-700' };
+    if (pct <= 66) return { bar: 'bg-amber-400', label: 'Moderate', pill: 'bg-amber-100 text-amber-700' };
+    if (pct < 100) return { bar: 'bg-red-400', label: 'High', pill: 'bg-red-100 text-red-700' };
+    return { bar: 'bg-purple-500', label: 'Full', pill: 'bg-purple-100 text-purple-700' };
   };
-
-  const getStatus = (load: number, maxLoad: number = 40): string => {
-    const pct = maxLoad > 0 ? (load / maxLoad) * 100 : 0;
-    if (pct <= 33) return "Low";
-    if (pct <= 66) return "Moderate";
-    if (pct < 100) return "High";
-    return "Overloaded";
-  };
-
-  const formatDistance = (meters?: number): string => {
-    if (!meters) return '';
-    if (meters < 1000) return `${Math.round(meters)}m away`;
-    return `${(meters / 1000).toFixed(1)}km away`;
-  };
-
-  const colorClasses = {
-    green: { bg: 'bg-green-600', text: 'text-green-600', bar: 'bg-green-500' },
-    orange: { bg: 'bg-orange-600', text: 'text-orange-600', bar: 'bg-orange-500' },
-    red: { bg: 'bg-red-600', text: 'text-red-600', bar: 'bg-red-500' },
-    purple: { bg: 'bg-purple-600', text: 'text-purple-600', bar: 'bg-purple-500' }
-  };
-
-  if (!jeepneys || jeepneys.length === 0) {
-    return null;
-  }
 
   return (
     <div className="absolute top-4 left-4 right-4 z-20">
-      <div className="flex items-center gap-3 w-full px-4">
+      {/* Header: bus stop name + count/status */}
+      <div className="mb-2 px-4 flex items-center gap-2">
+        <span className="inline-flex items-center gap-1.5 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-md text-sm font-bold text-gray-800 border border-gray-200">
+          🚌 {busStopName}
+        </span>
+        {isLoading ? (
+          <span className="text-xs text-white font-semibold bg-black/40 backdrop-blur-sm px-2.5 py-1 rounded-full animate-pulse">
+            Scanning…
+          </span>
+        ) : (
+          <span className="text-xs text-white font-semibold bg-black/40 backdrop-blur-sm px-2.5 py-1 rounded-full">
+            {jeepneys.length} jeepney{jeepneys.length !== 1 ? 's' : ''} within 1 km
+          </span>
+        )}
+      </div>
+
+      <div className="flex items-center gap-2 w-full px-4">
+        {/* Left scroll */}
         <button
           onClick={() => scroll('left')}
-          className="p-2 rounded-full bg-white/90 hover:bg-white shadow-md transition-colors flex-shrink-0 hidden md:block"
+          className="p-1.5 rounded-full bg-white/90 hover:bg-white shadow-md transition-colors shrink-0 hidden md:flex items-center justify-center"
           aria-label="Scroll left"
         >
-          <ChevronLeft size={24} />
+          <ChevronLeft size={20} />
         </button>
 
-        <div 
+        {/* Card row */}
+        <div
           ref={scrollContainerRef}
-          className="flex flex-nowrap gap-4 overflow-x-auto scrollbar-hide scroll-smooth flex-1 snap-x snap-mandatory"
-          style={{ 
-            scrollbarWidth: 'none', 
-            msOverflowStyle: 'none'
-          }}
+          className="flex flex-nowrap gap-3 overflow-x-auto scroll-smooth flex-1 snap-x snap-mandatory pb-1"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-            {jeepneys.map((jeep) => {
-              const colorTheme = getColorTheme(jeep.passengerCount, jeep.maxLoad);
-              const status = getStatus(jeep.passengerCount, jeep.maxLoad);
-              const loadPercentage = jeep.maxLoad && jeep.maxLoad > 0
+          {isLoading ? (
+            /* Skeleton loading cards */
+            [1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="bg-white/90 rounded-xl shadow-md shrink-0 snap-center w-46 animate-pulse overflow-hidden"
+              >
+                <div className="h-11 bg-gray-200 w-full" />
+                <div className="p-3 space-y-2.5">
+                  <div className="h-2 bg-gray-200 rounded-full w-full" />
+                  <div className="flex justify-between">
+                    <div className="h-3.5 bg-gray-200 rounded w-16" />
+                    <div className="h-3.5 bg-gray-200 rounded w-12" />
+                  </div>
+                  <div className="h-6 bg-gray-200 rounded-full w-28 mx-auto" />
+                </div>
+              </div>
+            ))
+          ) : jeepneys.length === 0 ? (
+            /* Empty state */
+            <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-md px-5 py-3.5 shrink-0 snap-center flex items-center gap-3">
+              <span className="text-3xl">🚍</span>
+              <div>
+                <p className="text-sm font-bold text-gray-700">No jeepneys within 1 km</p>
+                <p className="text-xs text-gray-400 mt-0.5">Check back in a few minutes</p>
+              </div>
+            </div>
+          ) : (
+            /* Jeepney cards */
+            jeepneys.map((jeep) => {
+              const jeepColor = getJeepneyColor(jeep.jeepneyId, jeep.color);
+              const loadTheme = getLoadTheme(jeep.passengerCount, jeep.maxLoad);
+              const loadPct = jeep.maxLoad && jeep.maxLoad > 0
                 ? Math.min((jeep.passengerCount / jeep.maxLoad) * 100, 100)
                 : 0;
-              const theme = colorClasses[colorTheme];
+              const displayRoute = jeep.routeNumber || jeep.jeepneyId;
 
               return (
                 <div
                   key={jeep.jeepneyId}
                   onClick={() => onJeepneyClick(jeep)}
-                  className="bg-white rounded-lg shadow-md p-4 h-[180px] flex-shrink-0 border border-gray-200 flex flex-col justify-center items-center snap-center w-full md:w-[calc(50%-8px)] lg:w-[calc(25%-12px)] cursor-pointer hover:shadow-lg transition-shadow"
+                  className="bg-white rounded-xl shadow-md shrink-0 snap-center w-46 cursor-pointer hover:shadow-xl hover:-translate-y-0.5 transition-all overflow-hidden border border-gray-100"
                 >
-                  <div className="flex items-center justify-center gap-3 mb-4">
-                    <div className={`${theme.bg} text-white font-bold text-2xl px-4 py-2 rounded-lg`}>
-                      {jeep.jeepneyId}
-                    </div>
-                    <span className="text-2xl font-semibold text-gray-900">{jeep.plateNumber}</span>
-                  </div>
-                  
-                  <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
-                    <div 
-                      className={`h-3 rounded-full transition-all ${theme.bg}`}
-                      style={{ width: `${loadPercentage}%` }}
-                    />
-                  </div>
-                  
-                  <div className="flex justify-between items-center text-lg w-full px-2">
-                    <span className="text-gray-900 font-bold">Load: {jeep.passengerCount}/{jeep.passengerCount <= 40 ? '40' : jeep.passengerCount}</span>
-                    <span className={`font-bold ${theme.text}`}>
-                      {status}
+                  {/* Colored identity strip with route number */}
+                  <div
+                    className="px-3 py-2.5 flex items-center justify-between gap-2"
+                    style={{ backgroundColor: jeepColor }}
+                  >
+                    <span className="text-white font-black text-lg leading-none tracking-wide drop-shadow-sm">
+                      {displayRoute}
                     </span>
+                    <span className="text-white/80 text-xs font-semibold bg-black/25 px-2 py-0.5 rounded-full shrink-0 truncate max-w-22.5">
+                      {jeep.plateNumber}
+                    </span>
+                  </div>
+
+                  {/* Card body */}
+                  <div className="p-3">
+                    {/* Load bar */}
+                    <div className="w-full bg-gray-100 rounded-full h-2 mb-2 overflow-hidden">
+                      <div
+                        className={`h-2 rounded-full transition-all duration-500 ${loadTheme.bar}`}
+                        style={{ width: `${loadPct}%` }}
+                      />
+                    </div>
+
+                    {/* Load stats */}
+                    <div className="flex justify-between items-center mb-2.5">
+                      <span className="text-xs text-gray-500 font-medium">
+                        {jeep.passengerCount}/{jeep.maxLoad ?? 40} pax
+                      </span>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${loadTheme.pill}`}>
+                        {loadTheme.label}
+                      </span>
+                    </div>
+
+                    {/* ETA badge */}
+                    {jeep.distance != null && (
+                      <ETABadge distanceMeters={jeep.distance} size="sm" showDistance />
+                    )}
                   </div>
                 </div>
               );
-            })}
+            })
+          )}
         </div>
 
+        {/* Right scroll */}
         <button
           onClick={() => scroll('right')}
-          className="p-2 rounded-full bg-white/90 hover:bg-white shadow-md transition-colors flex-shrink-0 hidden md:block"
+          className="p-1.5 rounded-full bg-white/90 hover:bg-white shadow-md transition-colors shrink-0 hidden md:flex items-center justify-center"
           aria-label="Scroll right"
         >
-          <ChevronRight size={24} />
+          <ChevronRight size={20} />
         </button>
       </div>
-      
-      <style jsx>{`
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
     </div>
   );
 }

@@ -2,6 +2,8 @@ import React, { useRef, useEffect, useMemo } from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import PopupCard from './popupcard';
+import { getJeepneyColor } from '@/lib/jeepneyColors';
+import { useAnimateMarker } from '@/lib/useAnimatedPosition';
 
 interface JeepneyMarkerProps {
   jeep: {
@@ -29,10 +31,14 @@ export default function JeepneyMarker({
   const markerRef = useRef<any>(null);
   const isNearbyBusStop = nearbyJeepneys?.some(nj => nj.jeepneyId === jeep.id);
 
-  // Log every time this component receives new props from Convex
-  useEffect(() => {
-    console.log(`🚍 [JeepneyMarker] ${jeep.id} received position: [${jeep.position[0]}, ${jeep.position[1]}]`);
-  }, [jeep.position[0], jeep.position[1]]);
+  // Capture the position at mount time and NEVER change it.
+  // Passing a stable value to <Marker position> means react-leaflet will never
+  // call marker.setLatLng() on subsequent renders — the animation hook owns all movement.
+  const mountPositionRef = useRef<[number, number]>(jeep.position);
+
+  // Drive ALL position updates through the smooth animation hook.
+  // Jumps >= 1 km snap instantly; smaller moves interpolate over 2 s.
+  useAnimateMarker(markerRef, jeep.position);
 
   // Get color based on load status
   const getStatusColor = () => {
@@ -45,100 +51,78 @@ export default function JeepneyMarker({
     }
   };
   
-  // Use custom color if provided, otherwise use status-based color
-  const markerColor = jeep.color || getStatusColor();
+  // Use jeepney's stored color, or derive a unique deterministic one from its ID.
+  // getStatusColor() is kept as fallback for status-based coloring via the load bar instead.
+  const markerColor = getJeepneyColor(jeep.id, jeep.color);
 
   // Use custom route number if provided, otherwise extract from ID
   const displayRouteNumber = jeep.routeNumber || jeep.id.replace(/[^0-9]/g, '') || jeep.id.slice(-2);
   
+  // Font size scales down for longer route numbers to always fit inside the pin
+  const routeFontSize = displayRouteNumber.length <= 3 ? 14 : displayRouteNumber.length <= 5 ? 12 : 10;
+
   // Memoize the icon so it is only recreated when appearance-related props change,
-  // not on every render (e.g. passenger count updates). Recreating the icon causes
-  // react-leaflet to call marker.setIcon() which rebuilds the DOM and closes popups.
+  // NOT on position/passenger updates — recreating the icon causes react-leaflet to
+  // rebuild the DOM element and close any open popups.
   const customIcon = useMemo(() => new L.DivIcon({
     className: 'custom-jeepney-marker',
     html: `
-      <div style="
-        position: relative;
-        width: 50px;
-        height: 70px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      ">
+      <div style="position:relative;width:54px;height:82px;display:flex;align-items:center;justify-content:center;">
         ${isNearbyBusStop ? `
           <div style="
-            position: absolute;
-            top: 15px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 70px;
-            height: 70px;
-            background: rgba(59, 130, 246, 0.3);
-            border-radius: 50%;
-            animation: pulse 2s infinite;
+            position:absolute;top:-4px;left:50%;transform:translateX(-50%);
+            width:80px;height:80px;
+            background:rgba(59,130,246,0.25);
+            border-radius:50%;
+            animation:pulse 2s infinite;
+            pointer-events:none;
           "></div>
         ` : ''}
-        
-        <svg width="50" height="70" viewBox="0 0 50 70" style="
-          filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));
-          cursor: pointer;
-          transition: transform 0.2s;
-        "
-        onmouseover="this.style.transform='scale(1.1)'"
-        onmouseout="this.style.transform='scale(1)'"
-        >
-          <!-- Pin shape -->
-          <defs>
-            <clipPath id="pin-clip-${jeep.id}">
-              <circle cx="25" cy="25" r="23"/>
-            </clipPath>
-          </defs>
-          
-          <!-- Pin body (teardrop shape) -->
-          <path d="M 25 1 
-                   C 11.7 1, 1 11.7, 1 25 
-                   C 1 38.3, 11.7 49, 25 49 
-                   C 38.3 49, 49 38.3, 49 25 
-                   C 49 11.7, 38.3 1, 25 1 Z" 
-                fill="${isNearbyBusStop ? '#3b82f6' : markerColor}" 
-                stroke="white" 
-                stroke-width="3"/>
-          
-          <!-- Pin point -->
-          <path d="M 25 49 L 17 62 L 25 69 L 33 62 Z" 
-                fill="${isNearbyBusStop ? '#3b82f6' : markerColor}" 
-                stroke="white" 
-                stroke-width="2"/>
-          
-          <!-- Inner circle (white background for content) -->
-          <circle cx="25" cy="25" r="18" fill="white" opacity="0.95"/>
-          
-          <!-- Jeepney emoji/icon -->
-          <text x="25" y="23" 
-                font-size="20" 
-                text-anchor="middle" 
-                dominant-baseline="middle">🚍</text>
-          
+
+        <svg width="54" height="82" viewBox="0 0 54 82" xmlns="http://www.w3.org/2000/svg"
+             style="filter:drop-shadow(0 4px 10px rgba(0,0,0,0.28));cursor:pointer;transition:transform 0.2s;"
+             onmouseover="this.style.transform='scale(1.1)'"
+             onmouseout="this.style.transform='scale(1)'">
+
+          <!-- Rounded rectangle body -->
+          <rect x="2" y="2" width="50" height="58" rx="13" ry="13"
+                fill="${isNearbyBusStop ? '#3b82f6' : markerColor}"
+                stroke="white" stroke-width="2.5"/>
+
+          <!-- Triangle pointer -->
+          <path d="M 14 58 L 27 80 L 40 58 Z"
+                fill="${isNearbyBusStop ? '#3b82f6' : markerColor}"
+                stroke="white" stroke-width="2" stroke-linejoin="round"/>
+          <!-- Cover rect-triangle seam -->
+          <rect x="14" y="55" width="26" height="5"
+                fill="${isNearbyBusStop ? '#3b82f6' : markerColor}"/>
+
+          <!-- White circle for emoji -->
+          <circle cx="27" cy="23" r="16" fill="white" opacity="0.93"/>
+          <!-- Jeepney emoji -->
+          <text x="27" y="23" font-size="18" text-anchor="middle" dominant-baseline="middle">🚍</text>
+
           ${showRouteNumber ? `
-            <!-- Route number -->
-            <text x="25" y="35" 
-                  font-size="9" 
-                  font-weight="bold" 
-                  text-anchor="middle" 
-                  fill="#374151" 
+            <!-- Route number: large white bold text on colored background -->
+            <text x="27" y="46"
+                  font-size="${routeFontSize}"
+                  font-weight="900"
+                  font-family="'Arial Black', Arial, sans-serif"
+                  text-anchor="middle"
+                  fill="white"
                   dominant-baseline="middle">${displayRouteNumber}</text>
           ` : ''}
         </svg>
       </div>
     `,
-    iconSize: [50, 70],
-    iconAnchor: [25, 70],
-  }), [jeep.id, jeep.position[0], jeep.position[1], markerColor, isNearbyBusStop, displayRouteNumber, showRouteNumber]);
+    iconSize: [54, 82],
+    iconAnchor: [27, 82],
+  }), [jeep.id, markerColor, isNearbyBusStop, displayRouteNumber, showRouteNumber, routeFontSize]);
   
   return (
     <Marker 
       ref={markerRef}
-      position={jeep.position}
+      position={mountPositionRef.current}
       icon={customIcon}
     >
       <Popup autoPan={true} keepInView={true}>

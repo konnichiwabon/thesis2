@@ -2,80 +2,100 @@
 
 import { useEffect, useRef } from "react";
 
+/** Haversine distance in metres between two GPS coordinates. */
+function haversineMeters(
+  lat1: number, lng1: number,
+  lat2: number, lng2: number
+): number {
+  const R = 6_371_000;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 /**
- * Smoothly animates a Leaflet marker between GPS positions.
+ * Smoothly animates a Leaflet marker to each new GPS position.
  *
- * KEY DESIGN: This hook directly calls marker.setLatLng() via requestAnimationFrame.
- * It does NOT use React state — this avoids re-render fights with react-leaflet's
- * own position management that were causing the marker to appear stuck.
+ * Rules:
+ *  - Movement >= 1 km  → snap instantly (teleport, no animation).
+ *    Handles calibration jumps / fresh GPS lock far from last position.
+ *  - Movement < 1 km   → smooth ease-out-cubic animation over `duration` ms.
+ *  - Movement < ~0.1 m → ignored (noise / duplicate update).
  *
- * Data flow:
- *   Convex DB (lat/lng) → useQuery → page.tsx → map.tsx → jeepneyMarker.tsx
- *   → useAnimateMarker → marker.setLatLng() (direct Leaflet API)
- *
- * @param markerRef React ref to the Leaflet marker instance
- * @param targetPosition The latest GPS position [lat, lng] from Convex
- * @param duration Animation duration in ms (default 2000)
+ * IMPORTANT: This hook drives the marker EXCLUSIVELY via the Leaflet API
+ * (marker.setLatLng). The <Marker> in react-leaflet must receive a STABLE
+ * position prop (the mount-time position, never updated) so react-leaflet
+ * never calls setLatLng itself and fights the animation.
  */
 export function useAnimateMarker(
   markerRef: React.RefObject<any>,
   targetPosition: [number, number],
-  duration: number = 2000
+  duration: number = 2_000,
+  snapThresholdMeters: number = 1_000
 ): void {
   const animationRef = useRef<number | null>(null);
-  const prevPositionRef = useRef<[number, number]>(targetPosition);
+  const prevPosRef   = useRef<[number, number]>(targetPosition);
 
   useEffect(() => {
     const marker = markerRef.current;
-    if (!marker) {
-      console.warn("🚨 [useAnimateMarker] No marker ref yet — skipping animation");
+    if (!marker) return;
+
+    const from = prevPosRef.current;
+    const to   = targetPosition;
+
+    // Skip sub-decimetre noise
+    if (
+      Math.abs(from[0] - to[0]) < 0.000_001 &&
+      Math.abs(from[1] - to[1]) < 0.000_001
+    ) {
       return;
     }
 
-    const from = prevPositionRef.current;
-    const to = targetPosition;
-
-    // Skip if position hasn't meaningfully changed (< ~0.1m)
-    if (Math.abs(from[0] - to[0]) < 0.000001 && Math.abs(from[1] - to[1]) < 0.000001) {
-      return;
-    }
-
-    console.log(`🎯 [useAnimateMarker] Animating: [${from[0].toFixed(5)}, ${from[1].toFixed(5)}] → [${to[0].toFixed(5)}, ${to[1].toFixed(5)}]`);
-
-    // Cancel any running animation
-    if (animationRef.current) {
+    // Cancel any in-progress animation
+    if (animationRef.current !== null) {
       cancelAnimationFrame(animationRef.current);
       animationRef.current = null;
     }
 
-    // Save starting point BEFORE updating prevPositionRef
-    const startLat = from[0];
-    const startLng = from[1];
-    const deltaLat = to[0] - startLat;
-    const deltaLng = to[1] - startLng;
+    const distMeters = haversineMeters(from[0], from[1], to[0], to[1]);
+
+    // ── SNAP: GPS jump >= 1 km (fresh lock, manual re-position, etc.) ──
+    if (distMeters >= snapThresholdMeters) {
+      marker.setLatLng(to);
+      prevPosRef.current = to;
+      return;
+    }
+
+    // ── ANIMATE: smooth interpolation for normal GPS movement ──
+    const startLat  = from[0];
+    const startLng  = from[1];
+    const deltaLat  = to[0] - startLat;
+    const deltaLng  = to[1] - startLng;
     const startTime = performance.now();
 
-    // Update ref so the next animation starts from the new target
-    prevPositionRef.current = to;
+    // Update reference immediately so the next update starts from here
+    prevPosRef.current = to;
 
     const tick = (now: number) => {
-      const elapsed = now - startTime;
+      const elapsed  = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
 
-      // Ease-out cubic for natural deceleration
+      // Ease-out cubic: fast start, smooth deceleration
       const eased = 1 - Math.pow(1 - progress, 3);
 
-      const lat = startLat + deltaLat * eased;
-      const lng = startLng + deltaLng * eased;
-
-      // Directly move the Leaflet marker — no React state, no re-renders
-      marker.setLatLng([lat, lng]);
+      marker.setLatLng([
+        startLat + deltaLat * eased,
+        startLng + deltaLng * eased,
+      ]);
 
       if (progress < 1) {
         animationRef.current = requestAnimationFrame(tick);
       } else {
-        // Snap exactly to target at end
-        marker.setLatLng([to[0], to[1]]);
+        marker.setLatLng(to); // Snap exactly to target at end
         animationRef.current = null;
       }
     };
@@ -83,10 +103,10 @@ export function useAnimateMarker(
     animationRef.current = requestAnimationFrame(tick);
 
     return () => {
-      if (animationRef.current) {
+      if (animationRef.current !== null) {
         cancelAnimationFrame(animationRef.current);
         animationRef.current = null;
       }
     };
-  }, [targetPosition[0], targetPosition[1], duration]);
+  }, [targetPosition[0], targetPosition[1]]);
 }

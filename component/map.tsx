@@ -93,6 +93,7 @@ function BusStopsLayer({ busStops, onBusStopClick, selectedBusStop, routesPassin
   return (
     <>
       {busStops.map((stop) => {
+        const markerSize = size + 8;
         const stopIcon = new DivIcon({
           className: 'custom-jeepney-stop-marker',
           html: `
@@ -100,29 +101,35 @@ function BusStopsLayer({ busStops, onBusStopClick, selectedBusStop, routesPassin
               display: flex;
               flex-direction: column;
               align-items: center;
-              justify-content: center;
-            ">
-              <div style="
-                background: ${stop.color};
-                border-radius: 8px;
-                width: ${size}px;
-                height: ${size}px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-                border: 3px solid white;
-                font-size: ${size * 0.7}px;
-                cursor: pointer;
-                transition: transform 0.2s;
-              "
-              onmouseover="this.style.transform='scale(1.15)'"
-              onmouseout="this.style.transform='scale(1)'"
-              >🚏</div>
+              cursor: pointer;
+              transition: transform 0.2s;
+              filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+            "
+            onmouseover="this.style.transform='scale(1.15)'"
+            onmouseout="this.style.transform='scale(1)'"
+            >
+              <svg width="${markerSize}" height="${markerSize}" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                <!-- Background rounded square -->
+                <rect x="2" y="2" width="44" height="44" rx="10" ry="10" fill="${stop.color}" stroke="white" stroke-width="2.5"/>
+                <!-- Bus body -->
+                <rect x="10" y="12" width="28" height="24" rx="4" ry="4" fill="white" opacity="0.95"/>
+                <!-- Windshield -->
+                <rect x="13" y="14" width="22" height="10" rx="2.5" ry="2.5" fill="${stop.color}" opacity="0.35"/>
+                <!-- Windshield divider -->
+                <line x1="24" y1="14" x2="24" y2="24" stroke="white" stroke-width="1.5" opacity="0.7"/>
+                <!-- Headlights -->
+                <circle cx="15" cy="30" r="2.2" fill="${stop.color}" opacity="0.8"/>
+                <circle cx="33" cy="30" r="2.2" fill="${stop.color}" opacity="0.8"/>
+                <!-- Grille lines -->
+                <line x1="20" y1="29" x2="28" y2="29" stroke="${stop.color}" stroke-width="1" opacity="0.4"/>
+                <line x1="20" y1="31" x2="28" y2="31" stroke="${stop.color}" stroke-width="1" opacity="0.4"/>
+                <!-- Bumper -->
+                <rect x="12" y="34" width="24" height="2" rx="1" fill="${stop.color}" opacity="0.3"/>
+              </svg>
             </div>
           `,
-          iconSize: [size, size],
-          iconAnchor: [size / 2, size / 2],
+          iconSize: [markerSize, markerSize],
+          iconAnchor: [markerSize / 2, markerSize / 2],
         });
 
         return (

@@ -245,12 +245,12 @@ const AdminPage = () => {
               onClick={() => setIsDarkMode(!isDarkMode)}
               className={`px-3 py-2 sm:px-4 rounded-md font-medium transition-all ${
                 isDarkMode
-                  ? 'bg-yellow-500 hover:bg-yellow-600 text-gray-900'
-                  : 'bg-gray-800 hover:bg-gray-900 text-white border border-gray-600'
+                  ? 'bg-gray-800 hover:bg-gray-900 text-white border border-gray-600'
+                  : 'bg-yellow-500 hover:bg-yellow-600 text-gray-900'
               }`}
               title={`Switch to ${isDarkMode ? 'Light' : 'Dark'} Mode`}
             >
-              {isDarkMode ? '☀️' : '🌙'}
+              {isDarkMode ? '🌙' : '☀️'}
             </button>
             <a 
               href="/" 

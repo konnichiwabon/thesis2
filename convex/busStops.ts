@@ -21,6 +21,43 @@ export const addBusStop = mutation({
   },
 });
 
+export const batchAddBusStops = mutation({
+  args: {
+    busStops: v.array(
+      v.object({
+        name: v.string(),
+        lat: v.number(),
+        lng: v.number(),
+        color: v.optional(v.string()),
+        passingRoutes: v.optional(v.array(v.string())),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const ids = [];
+    const colors = [
+      "#FF5733", "#33FF57", "#3357FF", "#FF33F5", "#33FFF5",
+      "#FFF533", "#FF8C33", "#8C33FF", "#33FF8C", "#FF3333"
+    ];
+
+    for (let i = 0; i < args.busStops.length; i++) {
+      const stop = args.busStops[i];
+      const color = stop.color || colors[i % colors.length];
+      
+      const id = await ctx.db.insert("busStops", {
+        name: stop.name,
+        lat: stop.lat,
+        lng: stop.lng,
+        color,
+        passingRoutes: stop.passingRoutes || [],
+      });
+      ids.push(id);
+    }
+
+    return { inserted: ids.length, ids };
+  },
+});
+
 export const getAllBusStops = query({
   handler: async (ctx) => {
     const busStops = await ctx.db.query("busStops").collect();
