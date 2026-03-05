@@ -4,6 +4,8 @@ import React, { useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import ETABadge from './etaBadge';
 import { getJeepneyColor } from '@/lib/jeepneyColors';
+import { getColorTheme, getStatus, deriveDisplayRoute } from '@/lib/loadStatus';
+import LoadBar from './loadBar';
 
 interface Jeepney {
   jeepneyId: string;
@@ -45,12 +47,11 @@ export default function BusStopCarousel({
     }
   };
 
-  const getLoadTheme = (load: number, maxLoad: number = 40) => {
-    const pct = maxLoad > 0 ? (load / maxLoad) * 100 : 0;
-    if (pct <= 33) return { bar: 'bg-emerald-400', label: 'Low', pill: 'bg-emerald-100 text-emerald-700' };
-    if (pct <= 66) return { bar: 'bg-amber-400', label: 'Moderate', pill: 'bg-amber-100 text-amber-700' };
-    if (pct < 100) return { bar: 'bg-red-400', label: 'High', pill: 'bg-red-100 text-red-700' };
-    return { bar: 'bg-purple-500', label: 'Full', pill: 'bg-purple-100 text-purple-700' };
+  const PILL_CLASSES: Record<string, string> = {
+    green:  'bg-emerald-100 text-emerald-700',
+    orange: 'bg-amber-100 text-amber-700',
+    red:    'bg-red-100 text-red-700',
+    purple: 'bg-purple-100 text-purple-700',
   };
 
   return (
@@ -118,11 +119,9 @@ export default function BusStopCarousel({
             /* Jeepney cards */
             jeepneys.map((jeep) => {
               const jeepColor = getJeepneyColor(jeep.jeepneyId, jeep.color);
-              const loadTheme = getLoadTheme(jeep.passengerCount, jeep.maxLoad);
-              const loadPct = jeep.maxLoad && jeep.maxLoad > 0
-                ? Math.min((jeep.passengerCount / jeep.maxLoad) * 100, 100)
-                : 0;
-              const displayRoute = jeep.routeNumber || jeep.jeepneyId;
+              const colorTheme = getColorTheme(jeep.passengerCount, jeep.maxLoad ?? 40);
+              const statusLabel = getStatus(jeep.passengerCount, jeep.maxLoad ?? 40);
+              const displayRoute = deriveDisplayRoute(jeep.jeepneyId, jeep.routeNumber);
 
               return (
                 <div
@@ -145,21 +144,20 @@ export default function BusStopCarousel({
 
                   {/* Card body */}
                   <div className="p-3">
-                    {/* Load bar */}
-                    <div className="w-full bg-gray-100 rounded-full h-2 mb-2 overflow-hidden">
-                      <div
-                        className={`h-2 rounded-full transition-all duration-500 ${loadTheme.bar}`}
-                        style={{ width: `${loadPct}%` }}
-                      />
-                    </div>
+                    <LoadBar
+                      currentLoad={jeep.passengerCount}
+                      maxLoad={jeep.maxLoad ?? 40}
+                      size="sm"
+                      className="mb-2"
+                    />
 
                     {/* Load stats */}
                     <div className="flex justify-between items-center mb-2.5">
                       <span className="text-xs text-gray-500 font-medium">
                         {jeep.passengerCount}/{jeep.maxLoad ?? 40} pax
                       </span>
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${loadTheme.pill}`}>
-                        {loadTheme.label}
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${PILL_CLASSES[colorTheme]}`}>
+                        {statusLabel}
                       </span>
                     </div>
 

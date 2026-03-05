@@ -3,6 +3,7 @@ import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import PopupCard from './popupcard';
 import { getJeepneyColor } from '@/lib/jeepneyColors';
+import { deriveDisplayRoute } from '@/lib/loadStatus';
 import { useAnimateMarker } from '@/lib/useAnimatedPosition';
 
 interface JeepneyMarkerProps {
@@ -56,7 +57,7 @@ export default function JeepneyMarker({
   const markerColor = getJeepneyColor(jeep.id, jeep.color);
 
   // Use custom route number if provided, otherwise extract from ID
-  const displayRouteNumber = jeep.routeNumber || jeep.id.replace(/[^0-9]/g, '') || jeep.id.slice(-2);
+  const displayRouteNumber = deriveDisplayRoute(jeep.id, jeep.routeNumber);
   
   // Font size scales down for longer route numbers to always fit inside the pin
   const routeFontSize = displayRouteNumber.length <= 3 ? 14 : displayRouteNumber.length <= 5 ? 12 : 10;
@@ -70,10 +71,13 @@ export default function JeepneyMarker({
       <div style="position:relative;width:54px;height:82px;display:flex;align-items:center;justify-content:center;">
         ${isNearbyBusStop ? `
           <div style="
-            position:absolute;top:-4px;left:50%;transform:translateX(-50%);
+            position:absolute;
+            left:-13px;
+            top:-10px;
             width:80px;height:80px;
-            background:rgba(59,130,246,0.25);
+            background:${markerColor}40;
             border-radius:50%;
+            border: 2px solid ${markerColor}99;
             animation:pulse 2s infinite;
             pointer-events:none;
           "></div>
@@ -86,16 +90,16 @@ export default function JeepneyMarker({
 
           <!-- Rounded rectangle body -->
           <rect x="2" y="2" width="50" height="58" rx="13" ry="13"
-                fill="${isNearbyBusStop ? '#3b82f6' : markerColor}"
+                fill="${markerColor}"
                 stroke="white" stroke-width="2.5"/>
 
           <!-- Triangle pointer -->
           <path d="M 14 58 L 27 80 L 40 58 Z"
-                fill="${isNearbyBusStop ? '#3b82f6' : markerColor}"
+                fill="${markerColor}"
                 stroke="white" stroke-width="2" stroke-linejoin="round"/>
           <!-- Cover rect-triangle seam -->
           <rect x="14" y="55" width="26" height="5"
-                fill="${isNearbyBusStop ? '#3b82f6' : markerColor}"/>
+                fill="${markerColor}"/>
 
           <!-- White circle for emoji -->
           <circle cx="27" cy="23" r="16" fill="white" opacity="0.93"/>
@@ -127,12 +131,13 @@ export default function JeepneyMarker({
     >
       <Popup autoPan={true} keepInView={true}>
         <PopupCard 
-          route={jeep.id}
+          route={displayRouteNumber}
           plateNumber={jeep.plateNumber}
           currentLoad={jeep.passengerCount}
           maxLoad={jeep.maxLoad ?? 40}
           status={jeep.status}
           colorTheme={jeep.colorTheme}
+          markerColor={markerColor}
           onClose={() => {
             markerRef.current?.closePopup();
           }}

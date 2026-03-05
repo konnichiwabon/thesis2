@@ -8,6 +8,7 @@ import { useConvexConnectionState, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { getLoadStatus } from "@/types/jeepney";
 import type { JeepneyMapMarker, JeepneyCarouselItem } from "@/types/jeepney";
+import { getColorTheme, getStatus, deriveDisplayRoute } from '@/lib/loadStatus';
 
 // Interface for jeepney data from Convex
 interface JeepneyData {
@@ -40,8 +41,9 @@ export default function Home() {
   const [mapType, setMapType] = useState<'roadmap' | 'satellite' | 'hybrid' | 'terrain'>('roadmap');
   const [selectedBusStop, setSelectedBusStop] = useState<any>(null);
   const [routesPassingThrough, setRoutesPassingThrough] = useState<any[]>([]);
-  const [nearbyJeepneys, setNearbyJeepneys] = useState<any[]>([]);
   const [busStopCoords, setBusStopCoords] = useState<{lat: number, lng: number} | null>(null);
+  const [activeRoute, setActiveRoute] = useState<{ geometry: { lat: number; lng: number }[]; color: string; name: string } | null>(null);
+  const [showStatusBanner, setShowStatusBanner] = useState(true);
   const connectionState = useConvexConnectionState();
   
   // Fetch jeepneys data from Convex
@@ -63,18 +65,22 @@ export default function Home() {
     } : "skip"
   );
   
-  // Update nearby jeepneys when query results change
+  // Read banner visibility preference from localStorage (set by admin page)
   useEffect(() => {
-    if (nearbyJeepneysData) {
-      console.log("🚍 Nearby jeepneys found:", nearbyJeepneysData.length);
-      nearbyJeepneysData.forEach(jeep => {
-        console.log(`  - ${jeep.plateNumber} (${jeep.jeepneyId}) - ${jeep.distanceFromBusStop}m away`);
-      });
-      setNearbyJeepneys(nearbyJeepneysData);
-    }
-  }, [nearbyJeepneysData]);
-  
+    const stored = localStorage.getItem('showStatusBanner');
+    if (stored !== null) setShowStatusBanner(stored !== 'false');
+    // Re-check whenever the window gains focus (admin tab may have changed it)
+    const onFocus = () => {
+      const val = localStorage.getItem('showStatusBanner');
+      if (val !== null) setShowStatusBanner(val !== 'false');
+    };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, []);
+
   // Keep selectedJeep in sync with Convex live data
+  // Live nearby jeepneys — directly from Convex, auto-updates whenever any jeepney moves
+  const liveNearbyJeepneys = nearbyJeepneysData ?? [];
   useEffect(() => {
     if (selectedJeep && jeepneysData) {
       const updatedJeep = jeepneysData.find((j: JeepneyData) => j.jeepneyId === selectedJeep.jeepneyId);
@@ -84,27 +90,13 @@ export default function Home() {
     }
   }, [jeepneysData]);
   
-  const getColorTheme = (load: number, maxLoad: number = 40): 'green' | 'red' | 'orange' | 'purple' => {
-    const pct = maxLoad > 0 ? (load / maxLoad) * 100 : 0;
-    if (pct <= 33) return "green";
-    if (pct <= 66) return "orange";
-    if (pct < 100) return "red";
-    return "purple";
-  };
-
-  const getStatus = (load: number, maxLoad: number = 40): string => {
-    const pct = maxLoad > 0 ? (load / maxLoad) * 100 : 0;
-    if (pct <= 33) return "Low";
-    if (pct <= 66) return "Moderate";
-    if (pct < 100) return "High";
-    return "Overloaded";
-  };
-  
   // Bus data that will be shared between popup and CardBox
   const busData = selectedJeep ? {
-    route: selectedJeep.jeepneyId,
+    route: deriveDisplayRoute(selectedJeep.jeepneyId, selectedJeep.routeNumber),
     name: selectedJeep.name,
     routeNumber: selectedJeep.routeNumber,
+    jeepneyId: selectedJeep.jeepneyId,
+    color: selectedJeep.color,
     plateNumber: selectedJeep.plateNumber,
     operator: selectedJeep.operator,
     driverName: selectedJeep.driverName,
@@ -124,7 +116,9 @@ export default function Home() {
   // Convert Convex data to carousel items
   const carouselItems = jeepneysData?.map((jeep: JeepneyData, index: number) => ({
     id: index + 1,
-    route: jeep.jeepneyId,
+    route: deriveDisplayRoute(jeep.jeepneyId, jeep.routeNumber),
+    jeepneyId: jeep.jeepneyId,
+    color: jeep.color,
     plateNumber: jeep.plateNumber,
     currentLoad: jeep.passengerCount,
     maxLoad: jeep.maxLoad ?? 0,
@@ -185,14 +179,15 @@ export default function Home() {
         onBusStopClick={handleBusStopClick}
         mapType={mapType}
         routesPassingThrough={routesPassingThrough}
-        nearbyJeepneys={nearbyJeepneys}
+        nearbyJeepneys={liveNearbyJeepneys}
         selectedBusStop={selectedBusStop}
+        activeRoute={activeRoute}
         onJeepneyClickFromBusStop={(jeep) => {
           setSelectedJeep(jeep);
           setShowCardBox(true);
           setSelectedBusStop(null);
           setRoutesPassingThrough([]);
-          setNearbyJeepneys([]);
+          setBusStopCoords(null);
           if (jeep.location) {
             setMapCenter([jeep.location.lat, jeep.location.lng]);
           }
@@ -200,8 +195,7 @@ export default function Home() {
         onCloseBusStop={() => {
           setSelectedBusStop(null);
           setRoutesPassingThrough([]);
-          setNearbyJeepneys([]);
-          setBusStopCoords(null); // Clear coordinates to stop the query
+          setBusStopCoords(null);
           setShowCarousel(true);
         }}
       />
@@ -268,14 +262,16 @@ export default function Home() {
         </div>
       </div>
       
-      {/* Connection Status Indicator */}
-      <div className="absolute bottom-5 left-5 z-50 bg-white/90 px-4 py-2 rounded-full shadow-lg text-sm font-bold backdrop-blur-sm border border-gray-200">
-        Status:{" "}
-        <span className={connectionState?.isWebSocketConnected ? "text-green-600" : "text-red-600"}>
-          {connectionState?.isWebSocketConnected ? "Connected to Convex" : "Disconnected"}
-        </span>
-        {" "}· v3.0
-      </div>
+      {/* Connection Status Indicator — togglable from admin panel */}
+      {showStatusBanner && (
+        <div className="absolute bottom-5 left-5 z-50 bg-white/90 px-4 py-2 rounded-full shadow-lg text-sm font-bold backdrop-blur-sm border border-gray-200">
+          Status:{" "}
+          <span className={connectionState?.isWebSocketConnected ? "text-green-600" : "text-red-600"}>
+            {connectionState?.isWebSocketConnected ? "Connected to Convex" : "Disconnected"}
+          </span>
+          {" "}· v3.0
+        </div>
+      )}
 
       {/* Carousel positioned on top of the map */}
       {showCarousel && (
@@ -283,7 +279,7 @@ export default function Home() {
           <Carousel 
             items={carouselItems}
             onItemClick={(item) => {
-              const jeep = jeepneysData?.find((j: JeepneyData) => j.jeepneyId === item.route);
+              const jeep = jeepneysData?.find((j: JeepneyData) => j.jeepneyId === item.jeepneyId);
               if (jeep && jeep.location) {
                 setSelectedJeep(jeep);
                 setMapCenter([jeep.location.lat, jeep.location.lng]);
@@ -295,41 +291,57 @@ export default function Home() {
         </div>
       )}
 
-      {/* Bus Stop Carousel - always visible when a bus stop is selected */}
+      {/* Bus Stop — reuses the same Carousel with stop name label */}
       {selectedBusStop && (
-        <BusStopCarousel
-          busStopName={selectedBusStop.name}
-          isLoading={nearbyJeepneysData === undefined && busStopCoords !== null}
-          jeepneys={nearbyJeepneys.map((jeep: any) => ({
-            jeepneyId: jeep.jeepneyId,
-            plateNumber: jeep.plateNumber,
-            passengerCount: jeep.passengerCount,
-            maxLoad: jeep.maxLoad,
-            location: jeep.location,
-            distance: jeep.distanceFromBusStop,
-            color: jeep.color,
-            routeNumber: jeep.routeNumber,
-          }))}
-          onClose={() => {
-            setSelectedBusStop(null);
-            setRoutesPassingThrough([]);
-            setNearbyJeepneys([]);
-            setBusStopCoords(null);
-            setShowCarousel(true);
-          }}
-          onJeepneyClick={(jeep) => {
-            setSelectedJeep(jeep);
-            setShowCardBox(true);
-            setShowCarousel(false);
-            setSelectedBusStop(null);
-            setRoutesPassingThrough([]);
-            setNearbyJeepneys([]);
-            setBusStopCoords(null);
-            if (jeep.location) {
-              setMapCenter([jeep.location.lat, jeep.location.lng]);
-            }
-          }}
-        />
+        <div className="absolute top-4 left-4 right-4 z-20">
+          {/* Stop name + count badge row */}
+          <div className="mb-2 px-4 flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-md text-sm font-bold text-gray-800 border border-gray-200">
+              🚏 {selectedBusStop.name}
+            </span>
+            <span className="text-xs text-white font-semibold bg-black/40 backdrop-blur-sm px-2.5 py-1 rounded-full">
+              {nearbyJeepneysData === undefined && busStopCoords !== null
+                ? 'Scanning…'
+                : `${liveNearbyJeepneys.length} jeepney${liveNearbyJeepneys.length !== 1 ? 's' : ''} within 1 km`}
+            </span>
+            <button
+              onClick={() => {
+                setSelectedBusStop(null);
+                setRoutesPassingThrough([]);
+                setBusStopCoords(null);
+                setShowCarousel(true);
+              }}
+              className="ml-auto bg-white/90 hover:bg-white rounded-full shadow-md p-1.5 transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+          <Carousel
+            items={liveNearbyJeepneys.map((jeep: any, index: number) => ({
+              id: index + 1,
+              route: deriveDisplayRoute(jeep.jeepneyId, jeep.routeNumber),
+              jeepneyId: jeep.jeepneyId,
+              color: jeep.color,
+              plateNumber: jeep.plateNumber,
+              currentLoad: jeep.passengerCount,
+              maxLoad: jeep.maxLoad ?? 40,
+              status: getStatus(jeep.passengerCount, jeep.maxLoad ?? 40),
+              colorTheme: getColorTheme(jeep.passengerCount, jeep.maxLoad ?? 40),
+              distance: jeep.distanceFromBusStop,
+            }))}
+            onItemClick={(item) => {
+              const jeep = liveNearbyJeepneys.find((j: any) => j.jeepneyId === item.jeepneyId);
+              if (jeep) {
+                setSelectedJeep(jeep);
+                setShowCardBox(true);
+                setSelectedBusStop(null);
+                setRoutesPassingThrough([]);
+                setBusStopCoords(null);
+                if (jeep.location) setMapCenter([jeep.location.lat, jeep.location.lng]);
+              }
+            }}
+          />
+        </div>
       )}
 
       
@@ -342,15 +354,27 @@ export default function Home() {
                 setSelectedJeep(null);
                 setShowCarousel(true);
                 setMapCenter(null);
+                setActiveRoute(null);
               }} 
               route={busData.route}
               name={(busData as any).name}
               routeNumber={busData.routeNumber}
+              jeepneyId={(busData as any).jeepneyId}
+              color={(busData as any).color}
               plateNumber={busData.plateNumber}
               operator={busData.operator}
               driverName={busData.driverName}
               currentLoad={busData.currentLoad}
               maxLoad={busData.maxLoad}
+              onShowRoute={() => {
+                const rn = busData.routeNumber;
+                const matched = allRoutes?.find(
+                  (r: any) => r.name === rn || r.name.includes(rn || '')
+                );
+                if (matched) {
+                  setActiveRoute({ geometry: matched.geometry, color: matched.color, name: matched.name });
+                }
+              }}
             />
           </div>
         </div>

@@ -1,34 +1,28 @@
 "use client";
+import { getJeepneyColor } from '@/lib/jeepneyColors';
+import { getColorTheme, getStatus } from '@/lib/loadStatus';
+import LoadBar from './loadBar';
 
 interface CardBoxProps {
   onClose?: () => void;
   route?: string;
   name?: string;
   routeNumber?: string;
+  jeepneyId?: string;
+  color?: string;
   plateNumber?: string;
   operator?: string;
   driverName?: string;
   currentLoad?: number;
   maxLoad?: number;
-  isFollowing?: boolean;
-  onFollowVehicle?: () => void;
+  onShowRoute?: () => void;
 }
 
-export default function CardBox({ onClose, route = "62C", name, routeNumber, plateNumber = "ABC 123", operator, driverName, currentLoad = 0, maxLoad = 0, isFollowing = false, onFollowVehicle }: CardBoxProps = {}) {
+export default function CardBox({ onClose, route = "62C", name, routeNumber, jeepneyId, color, plateNumber = "ABC 123", operator, driverName, currentLoad = 0, maxLoad = 0, onShowRoute }: CardBoxProps = {}) {
   const loadPercentage = maxLoad > 0 ? (currentLoad / maxLoad) * 100 : 0;
-
-  const status = () => {
-    const pct = maxLoad > 0 ? (currentLoad / maxLoad) * 100 : 0;
-    if (pct <= 33)
-      return { text: "Low", color: "text-green-600", barColor: "bg-green-500" };
-    else if (pct <= 66) {
-      return { text: "Moderate", color: "text-orange-600", barColor: "bg-orange-500" };
-    } else if (pct < 100) {
-      return { text: "High", color: "text-red-600", barColor: "bg-red-500" };
-    } else {
-      return { text: "Overloaded", color: "text-purple-600", barColor: "bg-purple-500" };
-    }
-  };
+  const markerColor = jeepneyId ? getJeepneyColor(jeepneyId, color) : '#1d4ed8';
+  const statusText = getStatus(currentLoad, maxLoad);
+  const TEXT_COLORS: Record<string, string> = { green: 'text-green-600', orange: 'text-orange-600', red: 'text-red-600', purple: 'text-purple-600' };
 
   return (
     <div className="relative w-80 mt-4 bg-white backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden p-4">
@@ -40,13 +34,13 @@ export default function CardBox({ onClose, route = "62C", name, routeNumber, pla
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>
-      <div className="bg-blue-700 p-4 flex items-center gap-3 rounded-md ">
-        <div className="flex bg-red-600 h-12 w-16 rounded-md shadow-sm items-center justify-center font-bold text-white">
+      <div className="p-4 flex items-center gap-3 rounded-md" style={{ backgroundColor: markerColor }}>
+        <div className="flex h-12 w-16 rounded-md shadow-sm items-center justify-center font-bold text-white" style={{ backgroundColor: 'rgba(0,0,0,0.25)' }}>
           {routeNumber || route}
         </div>
         <div className="flex-1 space-y-2">
           <div className="flex h-5 rounded font-bold items-center justify-center text-white">
-            {name || route}
+            {name || routeNumber || route}
           </div>
         </div>
       </div>
@@ -58,13 +52,7 @@ export default function CardBox({ onClose, route = "62C", name, routeNumber, pla
             Passenger Load
           </h3>
 
-          {/* Progress Bar Track (Gray Background) */}
-          <div className="w-full h-3 bg-gray-300/30 rounded-full overflow-hidden border border-gray-300">
-            <div
-              className={`h-full rounded-full transition-all duration-500 ease-out ${status().barColor}`}
-              style={{ width: `${loadPercentage}%` }}
-            ></div>
-          </div>
+          <LoadBar currentLoad={currentLoad} maxLoad={maxLoad} className="mb-0" />
 
           {/* Number Count */}
           <div className="mt-4 text-center">
@@ -73,11 +61,10 @@ export default function CardBox({ onClose, route = "62C", name, routeNumber, pla
             </span>
           </div>
 
-          {/* Status Text */}
           <p className="text-gray-500 font-medium mt-1 text-sm">
             Status:{" "}
-            <span className={`${status().color} font-bold`}>
-              {status().text}
+            <span className={`${TEXT_COLORS[getColorTheme(currentLoad, maxLoad)]} font-bold`}>
+              {statusText}
             </span>
           </p>
 
@@ -106,14 +93,10 @@ export default function CardBox({ onClose, route = "62C", name, routeNumber, pla
 
         <div className="flex gap-4 pt-2">
           <button
-            onClick={onFollowVehicle}
-            className={`flex-1 h-14 rounded-lg shadow-md items-center justify-center flex font-bold transition-all cursor-pointer ${
-              isFollowing 
-                ? 'bg-green-600 hover:bg-green-700 text-white animate-pulse' 
-                : 'bg-blue-600 hover:bg-blue-700 text-white'
-            }`}
+            onClick={onShowRoute}
+            className="flex-1 h-14 rounded-lg shadow-md items-center justify-center flex font-bold transition-all cursor-pointer bg-blue-600 hover:bg-blue-700 text-white"
           >
-            {isFollowing ? '📍 Following...' : '🚍 Follow Vehicle'}
+            🗺️ Show Route
           </button>
           <button 
             onClick={onClose}

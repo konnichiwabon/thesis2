@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, useMap, Marker, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Polyline, useMap, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L, { DivIcon } from 'leaflet';
 import { useQuery } from 'convex/react';
@@ -10,22 +10,7 @@ import BusStopPopup from './jeepStopPopup';
 import JeepneyMarker from './jeepneyMarker';
 import JeepneyMarkerPopup from './jeepneyMarkerPopup';
 
-// Helpers to compute color theme and status from passenger count
-function getColorTheme(load: number, maxLoad: number = 40): 'green' | 'red' | 'orange' | 'purple' {
-  const pct = maxLoad > 0 ? (load / maxLoad) * 100 : 0;
-  if (pct <= 33) return 'green';
-  if (pct <= 66) return 'orange';
-  if (pct < 100) return 'red';
-  return 'purple';
-}
-
-function getStatus(load: number, maxLoad: number = 40): string {
-  const pct = maxLoad > 0 ? (load / maxLoad) * 100 : 0;
-  if (pct <= 33) return 'Low';
-  if (pct <= 66) return 'Moderate';
-  if (pct < 100) return 'High';
-  return 'Overloaded';
-}
+import { getColorTheme, getStatus } from '@/lib/loadStatus';
 
 interface BusStop {
   _id: string;
@@ -46,15 +31,18 @@ interface MapComponentProps {
   selectedBusStop?: BusStop | null;
   onJeepneyClickFromBusStop?: (jeep: any) => void;
   onCloseBusStop?: () => void;
+  activeRoute?: { geometry: { lat: number; lng: number }[]; color: string; name: string } | null;
 }
 
 function MapController({ selectedLocation }: { selectedLocation?: [number, number] | null }) {
   const map = useMap();
   useEffect(() => {
     if (map && selectedLocation) {
-      map.flyTo([selectedLocation[0], selectedLocation[1]], 17, { duration: 1.5 });
+      map.flyTo([selectedLocation[0], selectedLocation[1]], 17, { animate: true, duration: 1.5 } as any);
     }
-  }, [selectedLocation, map]);
+    // map is a stable Leaflet instance from useMap() — omitting it is intentional
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLocation]);
   return null;
 }
 
@@ -82,10 +70,10 @@ function BusStopsLayer({ busStops, onBusStopClick, selectedBusStop, routesPassin
 
   // Calculate size based on zoom level
   const getSize = () => {
-    if (zoom >= 18) return 24;
-    if (zoom >= 16) return 28;
-    if (zoom >= 15) return 32;
-    return 36;
+    if (zoom >= 18) return 16;
+    if (zoom >= 16) return 18;
+    if (zoom >= 15) return 20;
+    return 22;
   };
 
   const size = getSize();
@@ -161,7 +149,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
   nearbyJeepneys = [],
   selectedBusStop = null,
   onJeepneyClickFromBusStop,
-  onCloseBusStop
+  onCloseBusStop,
+  activeRoute = null,
 }) => {
   const googleMapsKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || '';
 
@@ -197,7 +186,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     });
     L.Marker.prototype.options.icon = DefaultIcon;
     
-    // Add pulse animation to head
+    // Add pulse + radar animation keyframes
     const style = document.createElement('style');
     style.textContent = `
       @keyframes pulse {
@@ -209,6 +198,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
           opacity: 0.5;
           transform: scale(1.2);
         }
+      }
+      @keyframes radar-ring {
+        0%   { transform: scale(0.4); opacity: 0.9; }
+        100% { transform: scale(2.8); opacity: 0; }
       }
     `;
     document.head.appendChild(style);
@@ -267,6 +260,57 @@ const MapComponent: React.FC<MapComponentProps> = ({
           onCloseBusStop={onCloseBusStop}
         />
         
+        {/* Active route polyline — only shown when Show Route is clicked */}
+        {activeRoute && activeRoute.geometry.length > 1 && (
+          <Polyline
+            positions={activeRoute.geometry.map(p => [p.lat, p.lng] as [number, number])}
+            pathOptions={{ color: activeRoute.color, weight: 5, opacity: 0.9, dashArray: '10, 6', lineCap: 'round', lineJoin: 'round' }}
+          />
+        )}
+
+        {/* Radar animation overlay on selected bus stop */}
+        {selectedBusStop && (
+          <Marker
+            key={`radar-${selectedBusStop._id}`}
+            position={[selectedBusStop.lat, selectedBusStop.lng]}
+            icon={new L.DivIcon({
+              className: '',
+              html: `
+                <div style="position:relative;width:0;height:0;">
+                  ${[0, 500, 1000].map(delay => `
+                    <div style="
+                      position:absolute;
+                      left:50%; top:50%;
+                      width:48px; height:48px;
+                      margin-left:-24px; margin-top:-24px;
+                      border-radius:50%;
+                      border: 2px solid ${selectedBusStop.color};
+                      background: ${selectedBusStop.color}18;
+                      animation: radar-ring 1.8s ease-out ${delay}ms infinite;
+                      pointer-events:none;
+                    "></div>
+                  `).join('')}
+                  <div style="
+                    position:absolute;
+                    left:50%; top:50%;
+                    width:10px; height:10px;
+                    margin-left:-5px; margin-top:-5px;
+                    border-radius:50%;
+                    background:${selectedBusStop.color};
+                    border:2px solid white;
+                    box-shadow:0 0 6px ${selectedBusStop.color};
+                    pointer-events:none;
+                  "></div>
+                </div>
+              `,
+              iconSize: [0, 0],
+              iconAnchor: [0, 0],
+            })}
+            interactive={false}
+            zIndexOffset={-100}
+          />
+        )}
+
         {/* Jeepney Markers with Route Numbers */}
         {jeepLocations.map((jeep) => (
           <JeepneyMarker

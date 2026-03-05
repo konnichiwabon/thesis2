@@ -2,15 +2,22 @@
 
 import React, { useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import ETABadge from './etaBadge';
+import RouteBadge from './routeBadge';
+import LoadBar from './loadBar';
 
 interface CarouselItem {
   id: number;
   route: string;
+  jeepneyId?: string;
+  routeNumber?: string;
+  color?: string;
   plateNumber: string;
   currentLoad: number;
   maxLoad: number;
   status: string;
   colorTheme: 'green' | 'red' | 'orange' | 'purple';
+  distance?: number;
 }
 
 interface CarouselProps {
@@ -35,15 +42,11 @@ const Carousel: React.FC<CarouselProps> = ({ items, onItemClick }) => {
     return null;
   }
 
-  const getLoadPercentage = (item: CarouselItem) => {
-    return Math.round((item.currentLoad / item.maxLoad) * 100);
-  };
-
   const colorClasses = {
-    green: { bg: 'bg-green-600', text: 'text-green-600', badge: 'bg-green-600' },
-    orange: { bg: 'bg-orange-600', text: 'text-orange-600', badge: 'bg-orange-600' },
-    red: { bg: 'bg-red-600', text: 'text-red-600', badge: 'bg-red-600' },
-    purple: { bg: 'bg-purple-600', text: 'text-purple-600', badge: 'bg-purple-600' }
+    green:  { text: 'text-green-600' },
+    orange: { text: 'text-orange-600' },
+    red:    { text: 'text-red-600' },
+    purple: { text: 'text-purple-600' },
   };
 
   return (
@@ -68,21 +71,14 @@ const Carousel: React.FC<CarouselProps> = ({ items, onItemClick }) => {
           <div
             key={item.id}
             onClick={() => onItemClick?.(item)}
-            className="bg-white rounded-lg shadow-md p-4 h-[180px] flex-shrink-0 border border-gray-200 flex flex-col justify-center items-center snap-center w-full md:w-[calc(50%-8px)] lg:w-[calc(25%-12px)] cursor-pointer hover:shadow-lg transition-shadow"
+            className="bg-white rounded-lg shadow-md p-4 h-[210px] flex-shrink-0 border border-gray-200 flex flex-col justify-center items-center snap-center w-full md:w-[calc(50%-8px)] lg:w-[calc(25%-12px)] cursor-pointer hover:shadow-lg transition-shadow overflow-hidden"
           >
             <div className="flex items-center justify-center gap-3 mb-4">
-              <div className={`${colorClasses[item.colorTheme].badge} text-white font-bold text-2xl px-4 py-2 rounded-lg`}>
-                {item.route}
-              </div>
+              <RouteBadge label={item.route} jeepneyId={item.jeepneyId || ''} color={item.color} size="lg" />
               <span className="text-2xl font-semibold text-gray-900">{item.plateNumber}</span>
             </div>
             
-            <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
-              <div 
-                className={`h-3 rounded-full transition-all ${colorClasses[item.colorTheme].bg}`}
-                style={{ width: `${getLoadPercentage(item)}%` }}
-              />
-            </div>
+            <LoadBar currentLoad={item.currentLoad} maxLoad={item.maxLoad} className="mb-4" />
             
             <div className="flex justify-between items-center text-lg w-full px-2">
               <span className="text-gray-900 font-bold">Load: {item.currentLoad}/{item.maxLoad}</span>
@@ -90,6 +86,11 @@ const Carousel: React.FC<CarouselProps> = ({ items, onItemClick }) => {
                 {item.status}
               </span>
             </div>
+            {item.distance != null && (
+              <div className="mt-2">
+                <ETABadge distanceMeters={item.distance} size="lg" showDistance />
+              </div>
+            )}
           </div>
         ))}
       </div>

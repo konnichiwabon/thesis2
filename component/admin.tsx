@@ -43,6 +43,18 @@ const AdminPage = () => {
   const [editingJeepney, setEditingJeepney] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'jeepneys' | 'stopmanager' | 'routes'>('stopmanager');
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [showStatusBanner, setShowStatusBanner] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('showStatusBanner') !== 'false';
+    }
+    return true;
+  });
+
+  const toggleStatusBanner = () => {
+    const next = !showStatusBanner;
+    setShowStatusBanner(next);
+    localStorage.setItem('showStatusBanner', String(next));
+  };
 
   // Password check
   const ADMIN_PASSWORD = "admin123"; // Change this to your desired password
@@ -251,6 +263,21 @@ const AdminPage = () => {
               title={`Switch to ${isDarkMode ? 'Light' : 'Dark'} Mode`}
             >
               {isDarkMode ? '🌙' : '☀️'}
+            </button>
+            <button
+              onClick={toggleStatusBanner}
+              className={`px-3 py-2 sm:px-4 rounded-md font-medium transition-all border whitespace-nowrap ${
+                showStatusBanner
+                  ? isDarkMode
+                    ? 'bg-green-700 hover:bg-green-600 text-white border-green-600'
+                    : 'bg-green-500 hover:bg-green-600 text-white border-green-600'
+                  : isDarkMode
+                    ? 'bg-gray-700 hover:bg-gray-600 text-gray-400 border-gray-600'
+                    : 'bg-white hover:bg-gray-100 text-gray-500 border-gray-300'
+              }`}
+              title={`${showStatusBanner ? 'Hide' : 'Show'} connection status banner on map`}
+            >
+              {showStatusBanner ? '📡 Banner: On' : '📡 Banner: Off'}
             </button>
             <a 
               href="/" 

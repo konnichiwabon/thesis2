@@ -2,6 +2,8 @@ import React from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import PopupCard from './popupcard';
+import { getJeepneyColor } from '@/lib/jeepneyColors';
+import { deriveDisplayRoute } from '@/lib/loadStatus';
 
 interface JeepneyMarkerPopupProps {
   jeep: {
@@ -12,6 +14,8 @@ interface JeepneyMarkerPopupProps {
     position: [number, number];
     colorTheme: 'green' | 'red' | 'orange' | 'purple';
     status: string;
+    routeNumber?: string;
+    color?: string;
   };
   isHighlighted?: boolean;
   nearbyJeepneys?: any[];
@@ -26,6 +30,9 @@ export default function JeepneyMarkerPopup({
 }: JeepneyMarkerPopupProps) {
   // Check if this jeep is in the nearby jeepneys list
   const isNearbyBusStop = nearbyJeepneys?.some(nj => nj.jeepneyId === jeep.id);
+
+  const displayRouteNumber = deriveDisplayRoute(jeep.id, jeep.routeNumber);
+  const markerColor = getJeepneyColor(jeep.id, jeep.color);
   
   // Create custom icon based on whether jeep is near selected bus stop
   const customIcon = new L.DivIcon({
@@ -81,12 +88,13 @@ export default function JeepneyMarkerPopup({
     >
       <Popup autoPan={true} keepInView={true}>
         <PopupCard 
-          route={jeep.id}
+          route={displayRouteNumber}
           plateNumber={jeep.plateNumber}
           currentLoad={jeep.passengerCount}
           maxLoad={jeep.maxLoad ?? 0}
           status={jeep.status}
           colorTheme={jeep.colorTheme}
+          markerColor={markerColor}
           onClose={() => {}}
           onViewMoreDetails={() => onViewMoreDetails(jeep)}
         />

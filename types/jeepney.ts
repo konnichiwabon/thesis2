@@ -72,6 +72,6 @@ export function getLoadStatus(passengerCount: number, maxLoad: number = 40): {
   } else if (percentage <= 100) {
     return { status: "High", colorTheme: "red" };
   } else {
-    return { status: "Overloaded", colorTheme: "purple" };
+    return { status: "Full", colorTheme: "purple" };
   }
 }

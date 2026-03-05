@@ -3,6 +3,9 @@ import React from 'react';
 import { X, MapPin, Bus, Navigation } from 'lucide-react';
 import ETABadge from './etaBadge';
 import { getJeepneyColor } from '@/lib/jeepneyColors';
+import { getColorTheme, getStatus, deriveDisplayRoute } from '@/lib/loadStatus';
+import RouteBadge from './routeBadge';
+import LoadBar from './loadBar';
 
 interface Route {
   _id: string;
@@ -49,22 +52,6 @@ export default function JeepStopPopup({
   onShowRoute 
 }: JeepStopPopupProps) {
   
-  const getColorTheme = (load: number, maxLoad: number = 40): 'green' | 'red' | 'orange' | 'purple' => {
-    const pct = maxLoad > 0 ? (load / maxLoad) * 100 : 0;
-    if (pct <= 33) return "green";
-    if (pct <= 66) return "orange";
-    if (pct < 100) return "red";
-    return "purple";
-  };
-
-  const getStatus = (load: number, maxLoad: number = 40): string => {
-    const pct = maxLoad > 0 ? (load / maxLoad) * 100 : 0;
-    if (pct <= 33) return "Low";
-    if (pct <= 66) return "Moderate";
-    if (pct < 100) return "High";
-    return "Overloaded";
-  };
-
   return (
     <div className="w-full max-w-md">
       {/* Header */}
@@ -148,17 +135,13 @@ export default function JeepStopPopup({
             {jeepneys.map((jeep) => {
               const colorTheme = getColorTheme(jeep.passengerCount, jeep.maxLoad);
               const status = getStatus(jeep.passengerCount, jeep.maxLoad);
-              const loadPercentage = jeep.maxLoad && jeep.maxLoad > 0
-                ? Math.min((jeep.passengerCount / jeep.maxLoad) * 100, 100)
-                : 0;
-              const jeepColor = getJeepneyColor(jeep.jeepneyId, jeep.color);
-              const displayRoute = jeep.routeNumber || jeep.jeepneyId;
+              const displayRoute = deriveDisplayRoute(jeep.jeepneyId, jeep.routeNumber);
               
               const theme = {
-                green: { text: 'text-green-600', bar: 'bg-green-400', light: 'bg-green-50' },
-                red: { text: 'text-red-600', bar: 'bg-red-400', light: 'bg-red-50' },
-                orange: { text: 'text-orange-600', bar: 'bg-orange-400', light: 'bg-orange-50' },
-                purple: { text: 'text-purple-600', bar: 'bg-purple-400', light: 'bg-purple-50' },
+                green:  { text: 'text-green-600',  light: 'bg-green-50' },
+                red:    { text: 'text-red-600',    light: 'bg-red-50' },
+                orange: { text: 'text-orange-600', light: 'bg-orange-50' },
+                purple: { text: 'text-purple-600', light: 'bg-purple-50' },
               }[colorTheme];
 
               return (
@@ -170,12 +153,7 @@ export default function JeepStopPopup({
                   {/* Top row: unique color ID badge + plate + status */}
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2.5">
-                      <span
-                        className="px-2.5 py-1 rounded-lg text-white font-black text-sm tracking-wide"
-                        style={{ backgroundColor: jeepColor }}
-                      >
-                        {displayRoute}
-                      </span>
+                      <RouteBadge label={displayRoute} jeepneyId={jeep.jeepneyId} color={jeep.color} size="sm" />
                       <span className="text-gray-700 font-semibold text-sm">
                         {jeep.plateNumber}
                       </span>
@@ -185,13 +163,7 @@ export default function JeepStopPopup({
                     </span>
                   </div>
 
-                  {/* Load bar */}
-                  <div className="w-full bg-gray-100 rounded-full h-2 mb-2.5 overflow-hidden">
-                    <div 
-                      className={`h-2 rounded-full transition-all duration-500 ease-out ${theme.bar}`} 
-                      style={{ width: `${loadPercentage}%` }}
-                    />
-                  </div>
+                  <LoadBar currentLoad={jeep.passengerCount} maxLoad={jeep.maxLoad ?? 40} size="sm" className="mb-2.5" />
 
                   {/* Bottom row: load count + ETA */}
                   <div className="flex items-center justify-between">

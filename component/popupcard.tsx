@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import CardBox from './cardBox';
 import { useMap } from 'react-leaflet';
+import LoadBar from './loadBar';
 
 // Define the data this card needs
 interface PopupCardProps {
@@ -15,21 +16,22 @@ interface PopupCardProps {
   maxLoad: number;
   status: string;     // e.g. "Normal"
   colorTheme: 'green' | 'red' | 'orange' | 'purple'; // To handle different status colors
+  markerColor?: string; // Unique hex color for the route badge
   onClose: () => void; // Important: A way to x the popup
   onViewMoreDetails?: () => void;
 }
 
 export default function PopupCard({ 
-  route, plateNumber, currentLoad, maxLoad, status, colorTheme, onClose, onViewMoreDetails
+  route, plateNumber, currentLoad, maxLoad, status, colorTheme, markerColor, onClose, onViewMoreDetails
 }: PopupCardProps) {
   const map = useMap();
   
-  // Helper for colors based on theme
+  // Helper for text color based on load status
   const theme = {
-    green: { bg: 'bg-green-600', text: 'text-green-600', bar: 'bg-green-600' },
-    red: { bg: 'bg-red-600', text: 'text-red-600', bar: 'bg-red-600' },
-    orange: { bg: 'bg-orange-600', text: 'text-orange-600', bar: 'bg-orange-600' },
-    purple: { bg: 'bg-purple-600', text: 'text-purple-600', bar: 'bg-purple-600' },
+    green:  { text: 'text-green-600' },
+    red:    { text: 'text-red-600' },
+    orange: { text: 'text-orange-600' },
+    purple: { text: 'text-purple-600' },
   }[colorTheme];
 
   const handleViewMore = () => {
@@ -39,13 +41,14 @@ export default function PopupCard({
     map.closePopup();
   };
 
-  const loadPercentage = Math.min((currentLoad / maxLoad) * 100, 100);
-
   return (
-    <div>
+    <div className="w-56 overflow-hidden">
       {/* Header: Route and Plate */}
       <div className="flex items-center gap-3 mb-3">
-        <span className={`px-3 py-1 rounded-lg text-white font-bold text-lg ${theme.bg}`}>
+        <span
+          className="px-3 py-1 rounded-lg text-white font-bold text-lg"
+          style={markerColor ? { backgroundColor: markerColor } : undefined}
+        >
           {route}
         </span>
         <span className="text-gray-800 font-bold text-xl">
@@ -53,13 +56,7 @@ export default function PopupCard({
         </span>
       </div>
 
-      {/* Progress Bar */}
-      <div className="w-full bg-gray-300/30 rounded-full h-3 mb-3 border border-gray-300 overflow-hidden">
-        <div 
-          className={`h-3 rounded-full transition-all duration-500 ease-out ${theme.bar}`} 
-          style={{ width: `${loadPercentage}%` }}
-        ></div>
-      </div>
+      <LoadBar currentLoad={currentLoad} maxLoad={maxLoad} className="mb-3" />
 
       {/* Footer: Stats */}
       <div className="flex justify-between items-center text-sm font-bold">
