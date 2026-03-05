@@ -43,7 +43,7 @@ export default function Home() {
   const [routesPassingThrough, setRoutesPassingThrough] = useState<any[]>([]);
   const [busStopCoords, setBusStopCoords] = useState<{lat: number, lng: number} | null>(null);
   const [activeRoute, setActiveRoute] = useState<{ geometry: { lat: number; lng: number }[]; color: string; name: string } | null>(null);
-  const [showStatusBanner, setShowStatusBanner] = useState(true);
+  const [showConvexStatus, setShowConvexStatus] = useState(true);
   const connectionState = useConvexConnectionState();
   
   // Fetch jeepneys data from Convex
@@ -68,11 +68,11 @@ export default function Home() {
   // Read banner visibility preference from localStorage (set by admin page)
   useEffect(() => {
     const stored = localStorage.getItem('showStatusBanner');
-    if (stored !== null) setShowStatusBanner(stored !== 'false');
+    if (stored !== null) setShowConvexStatus(stored !== 'false');
     // Re-check whenever the window gains focus (admin tab may have changed it)
     const onFocus = () => {
       const val = localStorage.getItem('showStatusBanner');
-      if (val !== null) setShowStatusBanner(val !== 'false');
+      if (val !== null) setShowConvexStatus(val !== 'false');
     };
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
@@ -263,7 +263,7 @@ export default function Home() {
       </div>
       
       {/* Connection Status Indicator — togglable from admin panel */}
-      {showStatusBanner && (
+      {showConvexStatus && (
         <div className="absolute bottom-5 left-5 z-50 bg-white/90 px-4 py-2 rounded-full shadow-lg text-sm font-bold backdrop-blur-sm border border-gray-200">
           Status:{" "}
           <span className={connectionState?.isWebSocketConnected ? "text-green-600" : "text-red-600"}>
