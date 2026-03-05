@@ -61,6 +61,28 @@ export const saveLocation = mutation({
   },
 });
 
+// Reset passenger count to 0 for a specific jeepney
+export const resetPassengerCount = mutation({
+  args: {
+    jeepneyId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const jeep = await ctx.db
+      .query("jeepneys")
+      .filter((q) => q.eq(q.field("jeepneyId"), args.jeepneyId))
+      .first();
+
+    if (!jeep) throw new Error(`Jeepney ${args.jeepneyId} not found`);
+
+    await ctx.db.patch(jeep._id, {
+      passengerCount: 0,
+      lastUpdated: Date.now(),
+    });
+
+    return "Passenger count reset to 0";
+  },
+});
+
 // NEW: This function fetches the latest status of all jeepneys
 export const getJeepneys = query({
   args: {},

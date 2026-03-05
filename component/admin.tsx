@@ -30,6 +30,7 @@ const AdminPage = () => {
   const updateJeepney = useMutation(api.jeepneyManagement.updateJeepney);
   const deleteJeepney = useMutation(api.jeepneyManagement.deleteJeepney);
   const allJeepneys = useQuery(api.jeepneyManagement.getAllJeepneys);
+  const resetPassengerCount = useMutation(api.gps.resetPassengerCount);
   
   // Jeepney form states
   const [jeepneyId, setJeepneyId] = useState("");
@@ -230,6 +231,17 @@ const AdminPage = () => {
     setDriverName(jeep.driverName || "");
     setMaxLoad(jeep.maxLoad ?? 40);
     setActiveTab('jeepneys');
+  };
+
+  const handleResetPassengers = async (jeepneyId: string) => {
+    if (confirm(`Reset passenger count to 0 for ${jeepneyId}?`)) {
+      try {
+        await resetPassengerCount({ jeepneyId });
+      } catch (error) {
+        console.error("Error resetting passenger count:", error);
+        alert("Failed to reset passenger count");
+      }
+    }
   };
 
   const handleDeleteJeepney = async (id: any) => {
@@ -615,6 +627,13 @@ const AdminPage = () => {
                           className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
                         >
                           Edit
+                        </button>
+                        <button
+                          onClick={() => handleResetPassengers(jeep.jeepneyId)}
+                          className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors"
+                          title="Reset passenger count to 0"
+                        >
+                          🔄 Reset
                         </button>
                         <button
                           onClick={() => handleDeleteJeepney(jeep._id)}
