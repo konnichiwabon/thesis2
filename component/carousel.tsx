@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useRef } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import ETABadge from './etaBadge';
 import RouteBadge from './routeBadge';
@@ -27,20 +27,48 @@ interface CarouselProps {
 
 const Carousel: React.FC<CarouselProps> = ({ items, onItemClick }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const autoScrollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const scroll = (direction: 'left' | 'right') => {
-    if (scrollContainerRef.current) {
-      const cardWidth = scrollContainerRef.current.scrollWidth / items.length;
-      scrollContainerRef.current.scrollBy({
-        left: direction === 'left' ? -cardWidth : cardWidth,
-        behavior: 'smooth'
-      });
+  const scroll = useCallback((direction: 'left' | 'right') => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const cardWidth = el.scrollWidth / items.length;
+    const maxScroll = el.scrollWidth - el.clientWidth;
+
+    if (direction === 'right' && el.scrollLeft >= maxScroll - 4) {
+      // Wrap back to start
+      el.scrollTo({ left: 0, behavior: 'smooth' });
+    } else {
+      el.scrollBy({ left: direction === 'left' ? -cardWidth : cardWidth, behavior: 'smooth' });
     }
-  };
+  }, [items.length]);
 
-  if (!items || items.length === 0) {
-    return null;
-  }
+  // Auto-scroll every 5 seconds, pause on hover
+  useEffect(() => {
+    if (items.length <= 1) return;
+
+    const start = () => {
+      autoScrollRef.current = setInterval(() => scroll('right'), 5000);
+    };
+    const stop = () => {
+      if (autoScrollRef.current) clearInterval(autoScrollRef.current);
+    };
+
+    start();
+    const el = scrollContainerRef.current;
+    el?.addEventListener('mouseenter', stop);
+    el?.addEventListener('mouseleave', start);
+    el?.addEventListener('touchstart', stop);
+
+    return () => {
+      stop();
+      el?.removeEventListener('mouseenter', stop);
+      el?.removeEventListener('mouseleave', start);
+      el?.removeEventListener('touchstart', stop);
+    };
+  }, [items.length, scroll]);
+
+  if (!items || items.length === 0) return null;
 
   const colorClasses = {
     green:  { text: 'text-green-600' },
@@ -49,29 +77,30 @@ const Carousel: React.FC<CarouselProps> = ({ items, onItemClick }) => {
     purple: { text: 'text-purple-600' },
   };
 
+  const ChevronBtn = ({ direction }: { direction: 'left' | 'right' }) => (
+    <button
+      onClick={() => scroll(direction)}
+      className="p-2 rounded-full bg-white shadow-md border border-gray-200 hover:bg-gray-50 transition-colors shrink-0 flex items-center justify-center text-gray-700 hover:text-gray-900"
+      aria-label={`Scroll ${direction}`}
+    >
+      {direction === 'left' ? <ChevronLeft size={20} strokeWidth={2.5} /> : <ChevronRight size={20} strokeWidth={2.5} />}
+    </button>
+  );
+
   return (
-    <div className="flex items-center gap-3 w-full px-4">
-      <button
-        onClick={() => scroll('left')}
-        className="p-2 rounded-full bg-white/90 hover:bg-white shadow-md transition-colors flex-shrink-0 hidden md:block"
-        aria-label="Scroll left"
-      >
-        <ChevronLeft size={24} />
-      </button>
+    <div className="flex items-center gap-2 w-full px-4">
+      <ChevronBtn direction="left" />
 
       <div 
         ref={scrollContainerRef}
-        className="flex flex-nowrap gap-4 overflow-x-auto scrollbar-hide scroll-smooth flex-1 snap-x snap-mandatory"
-        style={{ 
-          scrollbarWidth: 'none', 
-          msOverflowStyle: 'none'
-        }}
+        className="flex flex-nowrap gap-4 overflow-x-auto scroll-smooth flex-1 snap-x snap-mandatory"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {items.map((item) => (
           <div
             key={item.id}
             onClick={() => onItemClick?.(item)}
-            className="bg-white rounded-lg shadow-md p-4 h-[210px] flex-shrink-0 border border-gray-200 flex flex-col justify-center items-center snap-center w-full md:w-[calc(50%-8px)] lg:w-[calc(25%-12px)] cursor-pointer hover:shadow-lg transition-shadow overflow-hidden"
+            className="bg-white rounded-lg shadow-md p-4 h-[210px] shrink-0 border border-gray-200 flex flex-col justify-center items-center snap-center w-full md:w-[calc(50%-8px)] lg:w-[calc(25%-12px)] cursor-pointer hover:shadow-lg transition-shadow overflow-hidden"
           >
             <div className="flex items-center justify-center gap-3 mb-4">
               <RouteBadge label={item.route} jeepneyId={item.jeepneyId || ''} color={item.color} size="lg" />
@@ -95,13 +124,7 @@ const Carousel: React.FC<CarouselProps> = ({ items, onItemClick }) => {
         ))}
       </div>
 
-      <button
-        onClick={() => scroll('right')}
-        className="p-2 rounded-full bg-white/90 hover:bg-white shadow-md transition-colors flex-shrink-0 hidden md:block"
-        aria-label="Scroll right"
-      >
-        <ChevronRight size={24} />
-      </button>
+      <ChevronBtn direction="right" />
     </div>
   );
 };
