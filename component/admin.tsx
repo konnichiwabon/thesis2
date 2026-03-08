@@ -40,7 +40,7 @@ const AdminPage = () => {
   const [jeepneyColor, setJeepneyColor] = useState("#10b981");
   const [operator, setOperator] = useState("");
   const [driverName, setDriverName] = useState("");
-  const [maxLoad, setMaxLoad] = useState(40);
+  const [maxLoad, setMaxLoad] = useState<number | "">(40);
   const [editingJeepney, setEditingJeepney] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'jeepneys' | 'stopmanager' | 'routes'>('stopmanager');
   const [isDarkMode, setIsDarkMode] = useState(true);
@@ -177,6 +177,8 @@ const AdminPage = () => {
       return;
     }
 
+    const finalMaxLoad = typeof maxLoad === "number" ? maxLoad : 40;
+
     try {
       if (editingJeepney) {
         await updateJeepney({
@@ -187,7 +189,7 @@ const AdminPage = () => {
           color: jeepneyColor,
           operator,
           driverName,
-          maxLoad,
+          maxLoad: finalMaxLoad,
         });
         alert("Jeepney updated successfully!");
         setEditingJeepney(null);
@@ -200,7 +202,7 @@ const AdminPage = () => {
           color: jeepneyColor,
           operator,
           driverName,
-          maxLoad,
+          maxLoad: finalMaxLoad,
         });
         alert("Jeepney added successfully!");
       }
@@ -500,7 +502,17 @@ const AdminPage = () => {
                     type="number"
                     id="maxLoad"
                     value={maxLoad}
-                    onChange={(e) => setMaxLoad(Math.max(1, parseInt(e.target.value) || 1))}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "") {
+                        setMaxLoad("");
+                      } else {
+                        const parsed = parseInt(val);
+                        if (!isNaN(parsed)) {
+                          setMaxLoad(Math.max(1, parsed));
+                        }
+                      }
+                    }}
                     min={1}
                     className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                       isDarkMode
